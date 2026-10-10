@@ -29,6 +29,7 @@
   --amber-soft:rgba(244,183,64,.12);
   --teal:#3ccf9d;
   --teal-soft:rgba(60,207,157,.12);
+  --sky:#7aa7f7;
   --red:#ef5b5b;
   --shadow:rgba(0,0,0,.45);
   --font-ui:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
@@ -46,7 +47,12 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:
 .brand h1{margin:0;font-size:18px;font-weight:700;letter-spacing:.02em}
 .brand .sub{display:block;font:500 11px/1.4 var(--font-num);letter-spacing:.2em;color:var(--ink-3);text-transform:uppercase}
 .controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
-.ctl{display:flex;align-items:center;gap:8px}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.dates{display:inline-flex;align-items:center;gap:8px}
+.dates .to{font-size:12px;color:var(--ink-3)}
+.dates input{appearance:none;-webkit-appearance:none;background:var(--raised);border:1px solid var(--line);border-radius:9px;padding:6px 10px;font:500 13px/1.2 var(--font-num);color:var(--ink);color-scheme:dark;min-width:0;width:142px}
+.dates input.on{border-color:var(--amber-deep)}
+.dates input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .ctl-label{font-size:12px;color:var(--ink-3)}
 .seg{display:inline-flex;background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
 .seg button{appearance:none;border:0;background:transparent;cursor:pointer;padding:6px 12px;border-radius:7px;font:500 13px/1.2 var(--font-ui);color:var(--ink-2)}
@@ -85,6 +91,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:
 .value-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-top:6px}
 .value{font:600 clamp(24px,2.3vw,31px)/1.1 var(--font-num);letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--ink)}
 .asof{font:400 12px var(--font-num);color:var(--ink-3)}
+.value-row.vpair{align-items:flex-end;gap:6px 28px}
+.vblock{display:flex;flex-direction:column;gap:2px}
+.vlabel{font:400 12px var(--font-ui);color:var(--ink-3)}
+.vlabel .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+.tip .row b{margin-left:auto;padding-left:16px;font-weight:600}
 .compare{font:400 12.5px/1.5 var(--font-num);color:var(--ink-2);font-variant-numeric:tabular-nums}
 .compare .g{font-weight:600}
 .up{color:var(--teal)}
@@ -153,6 +164,11 @@ tbody tr:hover td{background:var(--raised)}
           <button type="button" id="range-90" data-range="90" aria-pressed="false"><span class="n">90</span> 日</button>
           <button type="button" id="range-30" data-range="30" aria-pressed="false"><span class="n">30</span> 日</button>
         </div>
+        <div class="dates" role="group" aria-label="自訂日期區間">
+          <input type="date" id="date-from" aria-label="起始日期">
+          <span class="to">至</span>
+          <input type="date" id="date-to" aria-label="結束日期">
+        </div>
       </div>
       <span class="status" id="status" data-state="loading" role="status"><span class="dot"></span><span id="status-text">連線試算表中…</span></span>
       <button type="button" class="btn" id="reload">重新讀取</button>
@@ -162,7 +178,7 @@ tbody tr:hover td{background:var(--raised)}
   <section class="intro">
     <div>
       <div class="eyebrow">產品總表(日) · 2026 Q2 KE7 產品數據</div>
-      <h2>每日走勢<small>六項指標各自獨立，數字直接取自試算表</small></h2>
+      <h2>每日走勢<small>數字直接取自試算表</small></h2>
     </div>
     <span class="span-pill" id="span-pill">—</span>
   </section>
@@ -202,7 +218,7 @@ function gvizUrl(extraTqx){
 }
 
 var METRICS = [
-  {key:"total", name:"總用戶數", src:"當日新增(D) + 前一日日活(C)", group:"user", fmt:"int"},
+  {key:"total", name:"總用戶數與新增用戶數", leftName:"總用戶數", src:"", group:"user", fmt:"int", right:{key:"nu", name:"新增用戶數", color:"var(--sky)"}},
   {key:"dau",   name:"日活躍數", src:"C 欄 · 日活躍數",          group:"user", fmt:"int"},
   {key:"pr",    name:"充值PR",   src:"L 欄 · 充值PR",            group:"user", fmt:"pct"},
   {key:"rc",    name:"總充值($)", src:"Q 欄 · 總充值($)",         group:"money", fmt:"money"},
@@ -236,7 +252,8 @@ function fmtAxis(fmt, v){
 function trimNum(x){ var s = (Math.round(x * 10) / 10).toFixed(1); return s.replace(/\.0$/, ""); }
 
 /* ---------- data ---------- */
-var state = {rows: [], source: "loading", fetchedAt: null, range: "all"};
+var state = {rows: [], source: "loading", fetchedAt: null, range: "all", from: null, to: null};
+var baseInfo = {d:null, dau:null};
 
 function readSnapshot(){
   var raw = JSON.parse(document.getElementById("snapshot").textContent);
@@ -322,9 +339,11 @@ function buildDays(){
   state.rows.forEach(function(r){ if (r.d >= START){ byDate[r.d] = r; if (r.d > last) last = r.d; } });
   var days = [];
   for (var ms = toMs(START), end = toMs(last); ms <= end; ms += DAY) days.push(toIso(ms));
-  var series = {total:[], dau:[], pr:[], rc:[], arppu:[], ggr:[], nu:[], has:[]};
+  var series = {total:[], cumNew:[], dau:[], pr:[], rc:[], arppu:[], ggr:[], nu:[], has:[]};
+  var run = null;
+  baseInfo = {d:null, dau:null};
   days.forEach(function(iso, i){
-    var r = byDate[iso], prev = i > 0 ? byDate[days[i-1]] : null;
+    var r = byDate[iso];
     series.has.push(!!r);
     series.dau.push(r ? r.dau : null);
     series.nu.push(r ? r.nu : null);
@@ -332,21 +351,32 @@ function buildDays(){
     series.rc.push(r ? r.rc : null);
     series.arppu.push(r ? r.arppu : null);
     series.ggr.push(r ? r.ggr : null);
-    // 唯一的運算：總用戶數 = 當日新增 + 前一日日活
-    series.total.push(r && prev && r.nu != null && prev.dau != null ? r.nu + prev.dau : null);
-    series.prevDau = series.prevDau || [];
-    series.prevDau.push(prev ? prev.dau : null);
+    // 唯一的運算：總用戶數 = 1/1 日活 + 之後每天的新增，逐日累加到當天
+    if (r){
+      if (run === null){ if (r.dau != null){ run = r.dau; baseInfo = {d:iso, dau:r.dau}; } }
+      else if (r.nu != null) run += r.nu;
+    }
+    series.total.push(r && run !== null ? run : null);
+    series.cumNew.push(r && run !== null ? run - baseInfo.dau : null);
   });
   return {days: days, s: series};
 }
 
 function sliceRange(all){
-  var n = all.days.length, from = 0;
+  var n = all.days.length, from = 0, to = n - 1;
   if (state.range === "90") from = Math.max(0, n - 90);
-  if (state.range === "30") from = Math.max(0, n - 30);
+  else if (state.range === "30") from = Math.max(0, n - 30);
+  else if (state.range === "custom" && state.from && state.to){
+    from = n; to = -1;
+    for (var i = 0; i < n; i++){
+      var d = all.days[i];
+      if (d >= state.from && d <= state.to){ if (from === n) from = i; to = i; }
+    }
+    if (to < 0){ from = 0; to = n - 1; }
+  }
   var s = {};
-  Object.keys(all.s).forEach(function(k){ s[k] = all.s[k].slice(from); });
-  return {days: all.days.slice(from), s: s};
+  Object.keys(all.s).forEach(function(k){ s[k] = all.s[k].slice(from, to + 1); });
+  return {days: all.days.slice(from, to + 1), s: s, from: from, to: to};
 }
 
 /* ---------- chart ---------- */
@@ -379,6 +409,7 @@ function drawChart(card, m, view){
   if (W < 50) return;
   var vals = view.s[m.key], days = view.days, n = days.length;
   var color = GROUP[m.group].color;
+  var R = m.right ? {vals: view.s[m.right.key], color: m.right.color, name: m.right.name} : null;
 
   var lo = Infinity, hi = -Infinity;
   vals.forEach(function(v){ if (v != null){ if (v < lo) lo = v; if (v > hi) hi = v; } });
@@ -390,10 +421,17 @@ function drawChart(card, m, view){
   var ticks = []; for (var t = y0; t <= y1 + step / 2; t += step) ticks.push(+t.toFixed(10));
 
   var padL = Math.ceil(Math.max.apply(null, ticks.map(function(t){ return textW(fmtAxis(m.fmt, t)); }))) + 12;
-  var padR = 10, padT = 8, padB = 24;
+  var rTicks = null;
+  if (R){
+    var rHi = 0; R.vals.forEach(function(v){ if (v != null && v > rHi) rHi = v; });
+    var rStep = niceStep(rHi > 0 ? rHi : 1, ticks.length - 1);
+    rTicks = ticks.map(function(t, k){ return k * rStep; });
+  }
+  var padR = R ? Math.ceil(Math.max.apply(null, rTicks.map(function(t){ return textW(fmtAxis(m.fmt, t)); }))) + 12 : 10, padT = 8, padB = 24;
   var iw = W - padL - padR, ih = H - padT - padB;
   function X(i){ return padL + (n <= 1 ? iw / 2 : i * iw / (n - 1)); }
   function Y(v){ return padT + (1 - (v - y0) / (y1 - y0)) * ih; }
+  function YR(v){ return padT + (1 - v / rTicks[rTicks.length - 1]) * ih; }
 
   var defs = el("defs", {}, svg);
   var gid = "g-" + m.key;
@@ -418,6 +456,10 @@ function drawChart(card, m, view){
     el("line", {class: t === 0 && y0 < 0 ? "zero" : "gl", x1:padL, x2:padL + iw, y1:y, y2:y}, svg);
     var lab = el("text", {class:"ax", x:padL - 8, y:y + 4, "text-anchor":"end"}, svg);
     lab.textContent = fmtAxis(m.fmt, t);
+  });
+  if (R) rTicks.forEach(function(t, k){
+    var rl = el("text", {class:"ax", x:padL + iw + 8, y:Y(ticks[k]) + 4, "text-anchor":"start"}, svg);
+    rl.textContent = fmtAxis(m.fmt, t);
   });
 
   // x labels, thinned so they never collide
@@ -449,14 +491,28 @@ function drawChart(card, m, view){
   vals.forEach(function(v, i){ if (v == null) flush(); else seg.push([X(i), Y(v)]); });
   flush();
 
+  // right-axis line
+  if (R){
+    var rs = [];
+    var rflush = function(){
+      if (rs.length === 1) el("circle", {cx:rs[0][0], cy:rs[0][1], r:2.5, fill:R.color}, svg);
+      else if (rs.length > 1) el("path", {d: rs.map(function(p, q){ return (q ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(""), class:"ln", stroke:R.color, "stroke-width":1.6}, svg);
+      rs = [];
+    };
+    R.vals.forEach(function(v, i){ if (v == null) rflush(); else rs.push([X(i), YR(v)]); });
+    rflush();
+  }
+
   // emphasised endpoint
   var li = -1; for (var k = n - 1; k >= 0; k--){ if (vals[k] != null){ li = k; break; } }
   if (li >= 0) el("circle", {cx:X(li), cy:Y(vals[li]), r:4, fill:color, stroke:"var(--panel)", "stroke-width":2}, svg);
+  if (R && li >= 0 && R.vals[li] != null) el("circle", {cx:X(li), cy:YR(R.vals[li]), r:4, fill:R.color, stroke:"var(--panel)", "stroke-width":2}, svg);
 
   // hover layer
   var cross = el("line", {class:"cross", y1:padT, y2:padT + ih, x1:-10, x2:-10, visibility:"hidden"}, svg);
   var dot = el("circle", {r:4.5, fill:color, stroke:"var(--panel)", "stroke-width":2, visibility:"hidden"}, svg);
-  box._chart = {X:X, Y:Y, n:n, padL:padL, iw:iw, vals:vals, days:days, view:view, m:m, cross:cross, dot:dot, color:color, li:li};
+  var dot2 = R ? el("circle", {r:4.5, fill:R.color, stroke:"var(--panel)", "stroke-width":2, visibility:"hidden"}, svg) : null;
+  box._chart = {R:R, YR:R ? YR : null, dot2:dot2, X:X, Y:Y, n:n, padL:padL, iw:iw, vals:vals, days:days, view:view, m:m, cross:cross, dot:dot, color:color, li:li};
   svg.setAttribute("aria-label", m.name + "，" + md(days[0]) + " 至 " + md(days[n-1]) + " 每日走勢" + (li >= 0 ? "，最新 " + md(days[li]) + " " + fmtVal(m.fmt, vals[li]) : ""));
 }
 
@@ -467,17 +523,16 @@ function showTip(box, i){
   c.cross.setAttribute("x1", x); c.cross.setAttribute("x2", x); c.cross.setAttribute("visibility", "visible");
   if (v != null){ c.dot.setAttribute("cx", x); c.dot.setAttribute("cy", c.Y(v)); c.dot.setAttribute("visibility", "visible"); }
   else c.dot.setAttribute("visibility", "hidden");
+  if (c.dot2){
+    if (c.R.vals[i] != null){ c.dot2.setAttribute("cx", x); c.dot2.setAttribute("cy", c.YR(c.R.vals[i])); c.dot2.setAttribute("visibility", "visible"); }
+    else c.dot2.setAttribute("visibility", "hidden");
+  }
   var tip = box.querySelector(".tip");
   var html = '<div class="d">' + md(iso) + " " + wd(iso) + "</div>";
   if (!c.view.s.has[i]) html += '<div class="muted">試算表沒有這天的資料</div>';
   else {
-    html += '<div class="row"><span class="sw" style="background:' + c.color + '"></span><span class="k">' + c.m.name + "</span><b>" + fmtVal(c.m.fmt, v) + "</b></div>";
-    if (c.m.key === "total"){
-      var nu = c.view.s.nu[i], pd = c.view.s.prevDau[i];
-      html += v == null
-        ? '<div class="muted">缺前一日日活，無法計算</div>'
-        : '<div class="muted">新增 ' + fmtVal("int", nu) + " + 前日日活 " + fmtVal("int", pd) + "</div>";
-    }
+    html += '<div class="row"><span class="sw" style="background:' + c.color + '"></span><span class="k">' + (c.m.leftName || c.m.name) + "</span><b>" + fmtVal(c.m.fmt, v) + "</b></div>";
+    if (c.R) html += '<div class="row"><span class="sw" style="background:' + c.R.color + '"></span><span class="k">' + c.R.name + "</span><b>" + fmtVal(c.m.fmt, c.R.vals[i]) + "</b></div>";
   }
   tip.innerHTML = html; tip.hidden = false;
   var tw = tip.offsetWidth, bw = box.clientWidth;
@@ -486,7 +541,7 @@ function showTip(box, i){
 }
 function hideTip(box){
   var c = box._chart; box._idx = null;
-  if (c){ c.cross.setAttribute("visibility", "hidden"); c.dot.setAttribute("visibility", "hidden"); }
+  if (c){ c.cross.setAttribute("visibility", "hidden"); c.dot.setAttribute("visibility", "hidden"); if (c.dot2) c.dot2.setAttribute("visibility", "hidden"); }
   box.querySelector(".tip").hidden = true;
 }
 function idxFromEvent(box, e){
@@ -504,7 +559,10 @@ function buildCards(){
     card.innerHTML =
       '<div class="card-head"><div><div class="metric-name">' + m.name + '</div><span class="metric-src">' + m.src + '</span></div>' +
       '<span class="tag ' + m.group + '">' + g.label + '</span></div>' +
-      '<div class="value-row"><span class="value">—</span><span class="asof"></span></div>' +
+      (m.right
+        ? '<div class="value-row vpair"><div class="vblock"><span class="vlabel"><i class="sw" style="background:' + g.color + '"></i>' + (m.leftName || m.name) + '（左軸）</span><span class="value">—</span></div>' +
+          '<div class="vblock"><span class="vlabel"><i class="sw" style="background:' + m.right.color + '"></i>' + m.right.name + '（右軸）</span><span class="value value-b">—</span></div><span class="asof"></span></div>'
+        : '<div class="value-row"><span class="value">—</span><span class="asof"></span></div>') +
       '<div class="compare"></div>' +
       '<div class="chart" tabindex="0"><svg role="img"></svg><div class="tip" hidden></div></div>';
     grid.appendChild(card);
@@ -524,22 +582,30 @@ function buildCards(){
   });
 }
 
+function cmpLine(fmt, vals, days, li, label){
+  var pi = li - 7, pv = pi >= 0 ? vals[pi] : null, pre = label ? label + " " : "";
+  if (pv == null || vals[li] == null) return '<span class="g">　</span>' + pre + "上週同日無資料";
+  var cls = vals[li] > pv ? "up" : vals[li] < pv ? "down" : "";
+  var g = vals[li] > pv ? "▲" : vals[li] < pv ? "▼" : "＝";
+  return '<span class="g ' + cls + '">' + g + "</span> " + pre + "上週同日 " + md(days[pi]) + "　" + fmtVal(fmt, pv);
+}
+
 function fillCard(m, all, view){
   var card = document.getElementById("card-" + m.key);
   var vals = all.s[m.key], days = all.days, li = -1;
-  for (var k = vals.length - 1; k >= 0; k--){ if (vals[k] != null){ li = k; break; } }
-  var valEl = card.querySelector(".value"), asof = card.querySelector(".asof"), cmp = card.querySelector(".compare");
-  if (li < 0){ valEl.textContent = "—"; asof.textContent = ""; cmp.textContent = ""; }
+  for (var k = view.to; k >= 0; k--){ if (vals[k] != null){ li = k; break; } }
+  var valEl = card.querySelector(".value"), valB = card.querySelector(".value-b"), asof = card.querySelector(".asof"), cmp = card.querySelector(".compare");
+  if (li < 0){ valEl.textContent = "—"; if (valB) valB.textContent = "—"; asof.textContent = ""; cmp.textContent = ""; }
   else {
     valEl.textContent = fmtVal(m.fmt, vals[li]);
     asof.textContent = md(days[li]) + " " + wd(days[li]);
-    var pi = li - 7, pv = pi >= 0 ? vals[pi] : null;
-    if (pv == null) cmp.innerHTML = '<span class="g">　</span>上週同日無資料';
-    else {
-      var cls = vals[li] > pv ? "up" : vals[li] < pv ? "down" : "";
-      var g = vals[li] > pv ? "▲" : vals[li] < pv ? "▼" : "＝";
-      cmp.innerHTML = '<span class="g ' + cls + '">' + g + "</span> 上週同日 " + md(days[pi]) + "　" + fmtVal(m.fmt, pv);
+    var lines = [cmpLine(m.fmt, vals, days, li, m.right ? (m.leftName || m.name) : "")];
+    if (m.right){
+      var rv = all.s[m.right.key];
+      if (valB) valB.textContent = fmtVal(m.fmt, rv[li]);
+      lines.push(cmpLine(m.fmt, rv, days, li, m.right.name));
     }
+    cmp.innerHTML = lines.join("<br>");
   }
   drawChart(card, m, view);
 }
@@ -572,6 +638,11 @@ function renderAll(){
   var all = buildDays(), view = sliceRange(all);
   METRICS.forEach(function(m){ fillCard(m, all, view); });
   renderTable(view);
+  var fi = document.getElementById("date-from"), ti = document.getElementById("date-to");
+  fi.min = ti.min = all.days[0]; fi.max = ti.max = all.days[all.days.length - 1];
+  if (document.activeElement !== fi) fi.value = view.days[0];
+  if (document.activeElement !== ti) ti.value = view.days[view.days.length - 1];
+  fi.classList.toggle("on", state.range === "custom"); ti.classList.toggle("on", state.range === "custom");
   var d = view.days;
   document.getElementById("span-pill").textContent = d[0] + " → " + d[d.length - 1];
   var runs = missingRuns(all);
@@ -580,8 +651,8 @@ function renderAll(){
     : "這個環境連不到 Google 試算表，目前顯示 " + SNAPSHOT_AT + " 擷取的快照。把這個頁面放到 GitHub Pages 等一般網頁空間，每次打開都會直接讀試算表。";
   document.getElementById("note").innerHTML =
     "<b>資料來源</b>：Google 試算表「2026 Q2 KE7 產品數據」→ 產品總表(日)，從第 5 列開始讀，欄位 <code>B 日期 · C 日活躍數 · D 新增(註冊) · L 充值PR · Q 總充值($) · V ARPPU · Z 總投注GGR</code>。" +
-    "除了總用戶數（當日新增 + 前一日日活）之外，所有數字都直接取自試算表。" +
-    (runs.length ? "試算表目前沒有 " + runs.join("、") + " 的資料，圖上以灰底留白，前一天缺資料時總用戶數也會留空。" : "") +
+    "除了總用戶數（" + (baseInfo.d ? md(baseInfo.d) : "1/1") + " 日活 + 之後每天的新增逐日累加）之外，所有數字都直接取自試算表。" +
+    (runs.length ? "試算表目前沒有 " + runs.join("、") + " 的資料，圖上以灰底留白，這幾天的新增不會算進總用戶數，補齊後會自動變準。" : "") +
     "<br>" + src;
 }
 
@@ -596,6 +667,17 @@ document.querySelectorAll(".seg button").forEach(function(b){
   });
 });
 document.getElementById("reload").addEventListener("click", load);
+function onDates(){
+  var fi = document.getElementById("date-from"), ti = document.getElementById("date-to");
+  var f = fi.value, t = ti.value;
+  if (!f || !t) return;
+  if (f > t){ var x = f; f = t; t = x; fi.value = f; ti.value = t; }
+  state.range = "custom"; state.from = f; state.to = t;
+  document.querySelectorAll(".seg button").forEach(function(o){ o.setAttribute("aria-pressed", "false"); });
+  renderAll();
+}
+document.getElementById("date-from").addEventListener("change", onDates);
+document.getElementById("date-to").addEventListener("change", onDates);
 try {
   var saved = localStorage.getItem("ke7-range");
   if (saved === "90" || saved === "30"){ var sb = document.getElementById("range-" + saved); if (sb) sb.click(); }
