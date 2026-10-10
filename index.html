@@ -115,6 +115,18 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:
 .tip .sw{width:9px;height:9px;border-radius:2px;flex:none}
 .tip .k{color:var(--ink-2)}
 .tip .muted{color:var(--ink-3);font-size:11.5px}
+/* desktop (B): ~30% backing so the lines show through, text kept legible with a soft outline */
+.tip{background:rgba(11,13,16,.28);border-color:rgba(255,255,255,.07);box-shadow:none}
+.tip *{text-shadow:0 0 2px var(--tip),0 0 4px var(--tip),0 0 6px var(--tip)}
+/* phone (C): smaller box with ~55% backing */
+@media (max-width:640px){
+  .tip{background:rgba(11,13,16,.55);padding:3px 8px;font-size:11px;line-height:1.45;border-radius:7px}
+  .tip .d{font-size:10.5px}
+  .tip .sw{width:7px;height:7px}
+  .tip .row{gap:6px}
+  .tip .row b{padding-left:10px}
+  .tip *{text-shadow:0 0 2px var(--tip),0 0 4px var(--tip)}
+}
 
 /* table */
 .daily{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
