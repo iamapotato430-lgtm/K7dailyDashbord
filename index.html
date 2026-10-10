@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>KE7 Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: console top bar → range heading → six metric cards in an even grid (1 / 2 / 3 cols) → collapsible daily table → source note */
+:root{
+  color-scheme: dark;
+  --bg:#0f1115;
+  --panel:#171a1f;
+  --raised:#1e2228;
+  --selected:#2b3039;
+  --line:#2a2f37;
+  --grid:#22262d;
+  --tip:#0b0d10;
+  --ink:#e8eaed;
+  --ink-2:#a1a7b0;
+  --ink-3:#6b7280;
+  --amber:#f4b740;
+  --amber-deep:#d99a1e;
+  --amber-ink:#1b1406;
+  --amber-soft:rgba(244,183,64,.12);
+  --teal:#3ccf9d;
+  --teal-soft:rgba(60,207,157,.12);
+  --red:#ef5b5b;
+  --shadow:rgba(0,0,0,.45);
+  --font-ui:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --font-num:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1560px;margin:0 auto;padding-inline:clamp(16px,3vw,32px);padding-block:8px 48px}
+
+/* top bar */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;padding-block:16px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{flex:none;width:42px;height:42px;border-radius:11px;background:var(--amber);color:var(--amber-ink);display:grid;place-items:center;font:700 15px/1 var(--font-num);letter-spacing:-.02em;box-shadow:inset 0 -2px 0 var(--amber-deep)}
+.brand h1{margin:0;font-size:18px;font-weight:700;letter-spacing:.02em}
+.brand .sub{display:block;font:500 11px/1.4 var(--font-num);letter-spacing:.2em;color:var(--ink-3);text-transform:uppercase}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.ctl{display:flex;align-items:center;gap:8px}
+.ctl-label{font-size:12px;color:var(--ink-3)}
+.seg{display:inline-flex;background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.seg button{appearance:none;border:0;background:transparent;cursor:pointer;padding:6px 12px;border-radius:7px;font:500 13px/1.2 var(--font-ui);color:var(--ink-2)}
+.seg button .n{font-family:var(--font-num)}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--selected);color:var(--ink)}
+.seg button:focus-visible,.btn:focus-visible,.chart:focus-visible,summary:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.status{display:inline-flex;align-items:center;gap:8px;background:var(--raised);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:500 12px/1.2 var(--font-num);color:var(--ink-2);white-space:nowrap}
+.status .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-3)}
+.status[data-state="live"] .dot{background:var(--teal)}
+.status[data-state="snapshot"] .dot{background:var(--amber)}
+.status[data-state="loading"] .dot{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.3}}
+.btn{appearance:none;cursor:pointer;background:transparent;color:var(--amber);border:1px solid var(--amber-deep);border-radius:9px;padding:6px 12px;font:500 13px/1.2 var(--font-ui)}
+.btn:hover{background:var(--amber-soft)}
+.btn[disabled]{opacity:.5;cursor:default}
+
+/* heading */
+.intro{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 20px;padding-block:24px 18px}
+.eyebrow{font:500 12px/1.4 var(--font-num);letter-spacing:.08em;color:var(--ink-3)}
+.intro h2{margin:4px 0 0;font-size:26px;font-weight:700;letter-spacing:.02em;text-wrap:balance}
+.intro h2 small{font-size:15px;font-weight:400;color:var(--ink-2);margin-left:14px;letter-spacing:0}
+.span-pill{font:500 12px/1 var(--font-num);color:var(--ink-2);background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:8px 12px;white-space:nowrap}
+
+/* cards */
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media (min-width:820px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (min-width:1500px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.card{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px 12px;display:flex;flex-direction:column;gap:6px}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.metric-name{font-size:15px;font-weight:500;color:var(--ink)}
+.metric-src{display:block;font:400 11.5px/1.5 var(--font-num);color:var(--ink-3)}
+.tag{flex:none;font-size:12px;line-height:1;padding:5px 9px;border-radius:7px}
+.tag.user{color:var(--teal);background:var(--teal-soft)}
+.tag.money{color:var(--amber);background:var(--amber-soft)}
+.value-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-top:6px}
+.value{font:600 clamp(24px,2.3vw,31px)/1.1 var(--font-num);letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.asof{font:400 12px var(--font-num);color:var(--ink-3)}
+.compare{font:400 12.5px/1.5 var(--font-num);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.compare .g{font-weight:600}
+.up{color:var(--teal)}
+.down{color:var(--red)}
+.chart{position:relative;height:214px;margin-top:6px;border-radius:8px;touch-action:pan-y}
+.chart svg{display:block;width:100%;height:100%;overflow:visible}
+.gl{stroke:var(--grid);stroke-width:1}
+.zero{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:3 4}
+.ax{fill:var(--ink-3);font:400 11px var(--font-num)}
+.ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.cross{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:2 3}
+.gap{fill:var(--grid);opacity:.55}
+.tip{position:absolute;top:6px;left:0;z-index:3;pointer-events:none;background:var(--tip);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font:400 12.5px/1.6 var(--font-num);color:var(--ink);white-space:nowrap;box-shadow:0 10px 28px var(--shadow);font-variant-numeric:tabular-nums}
+.tip .d{color:var(--ink-2);font-size:12px}
+.tip .row{display:flex;align-items:center;gap:8px}
+.tip .sw{width:9px;height:9px;border-radius:2px;flex:none}
+.tip .k{color:var(--ink-2)}
+.tip .muted{color:var(--ink-3);font-size:11.5px}
+
+/* table */
+.daily{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.daily summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:14px 20px;font-size:15px;font-weight:500}
+.daily summary::-webkit-details-marker{display:none}
+.daily summary::before{content:"▸";color:var(--amber);font-size:12px;transition:transform .15s}
+.daily[open] summary::before{transform:rotate(90deg)}
+.daily summary .hint{font:400 12px var(--font-num);color:var(--ink-3)}
+.scroll{overflow:auto;max-height:560px;border-top:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 16px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--grid)}
+th{position:sticky;top:0;background:var(--raised);font:500 12px var(--font-ui);color:var(--ink-2);z-index:1}
+td{font:400 12.5px var(--font-num);color:var(--ink)}
+th:first-child,td:first-child{text-align:left}
+td.neg{color:var(--red)}
+td.na{color:var(--ink-3)}
+tbody tr:hover td{background:var(--raised)}
+
+.note{margin-top:18px;font-size:12.5px;line-height:1.7;color:var(--ink-3);max-width:90ch}
+.note b{font-weight:500;color:var(--ink-2)}
+.note code{font-family:var(--font-num);font-size:12px;color:var(--ink-2)}
+
+@media (max-width:560px){
+  .chart{height:190px}
+  .card{padding:16px 16px 10px}
+  .intro h2 small{display:block;margin:4px 0 0}
+}
+@media (prefers-reduced-motion:reduce){
+  .status[data-state="loading"] .dot{animation:none}
+  .daily summary::before{transition:none}
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">K7</div>
+      <div>
+        <h1>KE7 產品數據</h1>
+        <span class="sub">Daily Console · 產品總表(日)</span>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="ctl">
+        <span class="ctl-label" id="range-label">區間</span>
+        <div class="seg" role="group" aria-labelledby="range-label">
+          <button type="button" id="range-all" data-range="all" aria-pressed="true">1/1 起</button>
+          <button type="button" id="range-90" data-range="90" aria-pressed="false"><span class="n">90</span> 日</button>
+          <button type="button" id="range-30" data-range="30" aria-pressed="false"><span class="n">30</span> 日</button>
+        </div>
+      </div>
+      <span class="status" id="status" data-state="loading" role="status"><span class="dot"></span><span id="status-text">連線試算表中…</span></span>
+      <button type="button" class="btn" id="reload">重新讀取</button>
+    </div>
+  </header>
+
+  <section class="intro">
+    <div>
+      <div class="eyebrow">產品總表(日) · 2026 Q2 KE7 產品數據</div>
+      <h2>每日走勢<small>六項指標各自獨立，數字直接取自試算表</small></h2>
+    </div>
+    <span class="span-pill" id="span-pill">—</span>
+  </section>
+
+  <main class="grid" id="grid"></main>
+
+  <details class="daily" id="daily">
+    <summary>逐日明細 <span class="hint" id="daily-hint"></span></summary>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">日期</th><th scope="col">總用戶數</th><th scope="col">日活躍數</th><th scope="col">新增(註冊)</th><th scope="col">充值PR</th><th scope="col">總充值($)</th><th scope="col">ARPPU</th><th scope="col">GGR</th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </details>
+
+  <p class="note" id="note"></p>
+</div>
+
+<script id="snapshot" type="application/json">[["0101",700,606,6.29,4259,96.8,-5745.4],["0102",8262,8101,1.73,10461,73.15,363077.07],["0103",7096,5219,3.02,33986,158.81,339139.48],["0104",1589,486,6.99,60932,548.94,-47188.31],["0105",1098,373,11.48,14846,117.83,43322.7],["0106",927,340,12.08,29083,259.67,708280.43],["0107",885,329,15.03,24100,181.2,15540.7],["0108",1786,614,8.68,17909,115.54,12928.35],["0109",1182,477,10.49,13841,111.62,120484.9],["0110",842,352,13.78,20727,178.68,38902.75],["0111",479,134,19,11954,131.36,2416.98],["0112",579,236,20.73,67808,565.07,43564.61],["0113",682,329,26.69,75175,413.05,14142.94],["0114",1718,1333,48.6,104842,125.56,38914.56],["0115",1492,895,48.99,211449,289.26,25451.49],["0116",1390,670,54.1,1440887,1916.07,158584.03],["0117",1679,1007,56.46,1795978,1894.49,378627.41],["0118",1442,613,39.46,600848,1055.97,173909.22],["0119",1297,437,27.76,123684,343.57,67375.55],["0120",1441,662,36.16,100258,192.43,38676.69],["0121",1411,671,41.74,287863,488.73,574731.98],["0122",1444,762,48.2,224467,322.51,-1339.35],["0123",1524,881,45.01,101967,148.64,635051.52],["0124",1515,927,57.56,112329,128.82,29993.85],["0125",1062,509,43.6,64894,140.16,22185.4],["0126",1257,687,35.08,53327,120.92,12466.98],["0201",7711,6382,25.42,375143,191.4,86096.34],["0202",7444,6035,24.48,617600,338.97,146502.4],["0203",7338,5868,26.64,283798,145.17,82666.85],["0204",5231,3819,28.33,256743,173.24,62047.17],["0205",4984,3699,25.34,268476,212.57,165261.07],["0206",3093,1999,40.06,224696,181.35,90480.22],["0207",2889,1841,29.46,206076,242.16,-2246.13],["0208",3454,2366,37.81,255013,195.26,73450.76],["0209",2998,1732,29.75,310521,348.12,113021.79],["0210",2769,1679,46.66,279739,216.52,97263.66],["0211",2649,1400,40.66,257341,238.94,23190.38],["0212",1677,569,36.08,282115,466.31,56288.5],["0213",1881,852,33.76,477497,751.96,53714.92],["0214",5310,3653,16.67,295928,334.38,-29982.82],["0215",6282,4418,16.21,506336,497.38,447402.14],["0216",7206,5371,16.4,297987,252.1,129995.35],["0217",7789,5802,17.88,349949,251.22,188092.02],["0218",6883,4897,17.8,303564,247.81,76653.34],["0219",7602,5583,18.4,293985,210.14,140625.01],["0220",7315,5295,19.54,400646,280.37,60545.58],["0221",6766,4784,18.06,604265,494.49,137432.38],["0222",6286,4245,18.15,583456,511.35,10968.01],["0223",5753,3895,20.35,575932,491.83,260524.98],["0224",5133,3445,19.48,421382,421.38,289620],["0225",5911,4171,21.37,456301,361.28,-88158],["0226",5369,3635,21.49,797369,690.96,187927.83],["0227",4540,2827,24.43,828460,747.03,457510.29],["0228",4272,2584,24.93,680046,638.54,265005.42],["0301",5837,4058,22.17,910033,703.27,332899.35],["0302",5485,3531,23.68,1078305,830.1,455002.9],["0303",5713,3680,23.63,1066066,789.68,216498.42],["0304",6200,3910,22.5,1249273,895.54,821251.37],["0305",6763,4363,22.45,1024959,675.2,-247419.42],["0306",6487,4011,22.91,1570947,1057.16,179839.97],["0307",6632,4112,24,1453277,912.86,530763.43],["0308",7453,4704,22.82,1289694,758.2,622756.61],["0309",6926,4248,23.71,1227693,747.68,298212.22],["0310",5568,3060,25.56,1645662,1156.47,584510.79],["0311",5393,2789,24.68,1361476,1022.9,552768.85],["0312",6136,3317,24.02,1427412,968.39,914712.75],["0313",6389,3564,23.15,1031659,697.54,395519.85],["0314",5964,3244,23.32,1540088,1107.18,769972.29],["0315",5383,2924,22.33,691827,575.56,117102.99],["0316",6368,3588,23.15,1155993,784.26,450158.81],["0317",6113,3333,24.33,1040854,699.97,606365.26],["0318",5681,3007,25.24,922214,643.11,392884.81],["0319",6789,3650,21.61,973360,663.5,519473.34],["0320",8983,5362,21.63,1423134,732.44,617053.33],["0321",7626,4239,22.66,1453013,840.86,708583.36],["0322",8825,5143,19.91,1365268,777.04,620622.57],["0323",5439,2538,23.79,1193448,922.29,526006.53],["0324",8392,4706,21.15,1509306,850.31,844128.47],["0325",7435,4279,23.16,1585783,920.9,651471.4],["0326",7076,4012,24.96,1712231,969.55,375054.33],["0327",6784,3813,27.17,1899117,1030.45,320225.47],["0328",6203,3355,24.92,1722022,1113.86,865784.8],["0329",6846,3908,23.47,1595379,992.77,689018.12],["0330",7911,4697,23.71,1813037,966.44,977420.66],["0331",5512,4268,33.42,1967693,1068.24,1127104.96],["0401",5484,2982,30.43,1604819.8,961.55,350138.15],["0402",5416,1556,24.13,1736895.45,1328.92,1049162.96],["0403",7083,1597,19.6,1505127.75,1084.39,767306.98],["0404",5199,2397,26.49,1370224.9,995.08,698169.88],["0405",6539,3469,25.29,1713836.3,1036.18,794689.28],["0406",7191,4055,24.5,1348909.75,765.56,476910.45],["0407",7110,3888,24.98,1709170.65,962.37,136509.81],["0408",7299,4068,25.51,1609763.6,864.53,915444.27],["0409",8753,5346,21.81,1422688.65,745.25,732959.67],["0410",8678,5452,21.36,1514841.5,817.07,793700.77],["0411",8911,5313,22.69,1394276.05,689.55,554226.61],["0412",10001,6256,21.61,1159656.45,536.63,861718.37],["0413",9680,5137,20.8,1343418.75,667.37,471072.88],["0414",10444,5633,21.79,2045790.8,898.85,369723.8],["0415",10047,5554,21,1974183.6,935.63,809845.18],["0416",9794,5544,22.65,1915963.8,863.82,442758.14],["0417",9111,4922,23.04,1847213.25,880.04,722685.53],["0418",7748,3829,22.06,1773574.95,1037.79,288643.6],["0419",7846,4367,21.32,1561226.2,933.19,418798.36],["0420",8225,4178,20.75,1683990.9,986.52,327710.69],["0421",7812,4167,21.29,2254761.35,1355.84,1383524.48],["0422",7656,4141,22.52,2151152.45,1247.77,867574.35],["0423",9671,4248,20.26,1542170.15,787.22,553678.98],["0424",9294,4526,21.24,2455313,1243.83,845515.57],["0425",7617,3698,22.7,1957924.35,1132.4,252354.9],["0426",8491,4304,21.29,2011548.05,1112.58,1601711.73],["0427",8223,4514,21.8,2434383.55,1357.72,972229.66],["0428",7820,4237,24.05,2748477.3,1461.18,530219.54],["0429",8811,4621,22.45,2870765.1,1451.35,1503977.85],["0430",8833,4915,23.55,2858560.45,1374.31,936577.85],["0501",8233,4553,24.04,2544046.8,1285.52,946053.82],["0502",8641,3759,23.78,2734324.2,1330.57,704147.12],["0503",8644,4367,21.51,2396609.65,1289.19,1387015.78],["0504",8766,4731,22.93,3337877.25,1660.64,1678017.95],["0505",10119,5339,23.26,2835294,1204.46,442556.9],["0506",9371,5044,24.27,2629731.1,1156.43,815866.68],["0507",9692,4983,24.26,2592725.75,1102.82,981682.31],["0508",8258,4141,26.07,2358041.55,1095.24,58316.12],["0509",8894,4202,23.57,3157306.95,1506.35,700767.62],["0510",8734,4414,23.14,2394532,1184.83,153323.3],["0511",9758,4251,23.26,3308535.55,1457.5,1391314.78],["0512",7358,2455,25.48,2484812.4,1325.23,488142.64],["0513",7043,2512,26.48,2429686.75,1302.78,141887.97],["0514",6963,2436,27.06,2994574.8,1589.48,1919094.99],["0515",6484,2341,26.1,1882939.9,1112.85,75115.41],["0516",6045,2245,27.86,2664446,1582.21,1752210.43],["0517",7164,3249,23.46,1593464.45,947.93,747163.26],["0518",6917,3132,23.83,1988163.8,1206.41,598790.72],["0519",8207,3388,22.08,2344252.3,1293.74,990961.96],["0520",8306,4133,23.16,1984883.45,1031.64,1108829.62],["0521",9180,4370,22.23,1873145.4,917.76,321188.81],["0522",8485,3689,24.22,2328260.95,1132.97,397368.4],["0523",7754,3273,25.02,2551903.3,1315.41,800537.91],["0524",9045,4206,23.25,1758587.75,836.23,-18748.43],["0525",7377,2867,25.29,2730944.1,1463.53,1171820.27],["0526",7318,3107,25.35,2384923.7,1285.67,1114467.56],["0527",8595,3404,23.5,2260391.05,1119.01,670083.91],["0528",7283,2962,24.43,2527742.9,1420.88,1569360.04],["0529",7840,2962,25.2,2651218.2,1341.71,2088749.67],["0530",7453,2595,26.38,2136327.7,1086.64,1397704.39],["0531",7977,3321,24.41,1674290.45,859.93,787615.53],["0601",9210,4079,22.26,1608636.9,784.7,888526.09],["0602",8344,3189,25.14,2289235.9,1091.15,1936651.16],["0603",9149,3300,24.84,2309690.35,1016.14,884074.22],["0604",8771,2919,26.83,2563862.85,1089.61,621200.92],["0605",8093,2739,27.64,2963245.7,1324.65,1118000.36],["0606",8727,2870,28.75,3410800.2,1359.43,1257655.33],["0607",8829,3110,26.96,2795246.75,1174.47,2056631.79],["0608",8775,3212,27.03,2602915.45,1097.35,911990.58],["0609",9273,3258,26.16,2816357.65,1160.91,1280898.59],["0610",8858,3029,24.6,1957751.45,898.46,1936066.27],["0611",9340,3552,24.75,2499240.05,1080.99,867069.01],["0612",9064,3344,24.24,2187425.35,995.64,1247745.06],["0613",9806,3258,24.34,2099441.1,879.53,1375402.81],["0614",11127,4295,21.81,1903432.35,784.27,-279116],["0615",11335,4726,23.46,2308467.7,868.17,-224839.06],["0616",11843,5067,23.43,2506592.1,903.28,591238],["0617",11598,4781,23.29,2896152.9,1072.25,1202774.73],["0618",11996,5145,22.02,2998104.05,1135.22,1331406.73],["0619",13144,6359,22.34,2798790.25,952.94,-1797686.88],["0620",11695,5241,23.24,2649874.9,974.94,100954.97],["0621",11559,5287,23.88,2387680.6,865.1,1424442.46],["0622",9706,3904,24.68,2152805.45,898.87,1076201.36],["0623",12743,6094,21.82,2372845.4,853.54,1174370.91],["0624",17765,6421,15.29,2452147.6,902.52,333758.73],["0625",14110,5121,18.41,1899468,731.41,1321559.6],["0626",11452,3569,21.73,2290894.6,920.78,-716388.99],["0627",11442,3431,23.36,3380700.4,1264.76,1656119.74],["0628",11046,3466,23.36,2383945.2,924.01,-156017.09],["0629",11587,3626,21.42,3450668.85,1390.28,1765053.87],["0630",11959,3886,21.5,2973285.3,1156.47,1222690.13],["0701",17604,4736,15.35,2973986.4,1100.25,1972578.49],["0702",14716,4199,17.87,2462142.55,936.18,-515817.29],["0703",15790,4053,18.39,3317852.2,1142.9,1915156.99],["0704",15021,3777,19.95,2586627.7,863.07,-193498.87],["0705",14338,3767,20.42,2521043.5,861.01,1403549.47],["0706",13675,4178,19.12,2100198.25,803.44,990247.64],["0707",13170,3742,21.32,2298352.1,818.5,-162502.04],["0708",14532,4200,20.95,2465591.05,809.98,169711.14],["0709",13727,3956,21.27,2888914.85,989.35,997957.69],["0710",17915,4747,18.38,2852231.55,866.41,595126.9],["0711",17925,4402,18.59,3127380.05,938.59,1481577.38],["0712",19123,4766,16.84,2561568.6,795.52,1629395.93],["0713",17267,4220,17.28,2570212.65,861.33,1332451.48],["0714",15253,3395,18.28,2763090.2,991.07,1399167.05],["0715",15269,3661,19.41,2232728,753.54,943218.1],["0716",14012,3342,19.72,2315036.95,837.87,1389892.99],["0717",17424,3606,17.28,2577554.25,856.33,1396176.55],["0718",18287,3932,17.09,2673247.75,855.44,1403897.55],["0719",15459,3548,18.62,2216340.5,769.83,1355807.76],["0720",14548,3083,18.64,2854255.05,1052.45,1402672.29],["0721",15829,3332,18.21,3044785.15,1056.12,1627441.65],["0722",14247,3390,19.32,2935869.55,1066.81,-1119268.35],["0723",14224,3261,20.02,2537908.85,891.12,1682551.33],["0724",16996,3222,17.1,3204092.55,1102.2,1602402.29],["0725",15527,2955,19.06,3347828.5,1131.41,584230.31],["0726",18204,4293,16.36,2691875.35,903.92,1743357.4],["0727",14176,3181,18.72,2921859.9,1100.93,916209.39],["0728",13643,3120,19.56,2374492.7,889.99,319117.92],["0729",13923,3195,18.5,2688102.9,1043.52,1677839.19],["0730",14999,3351,18.49,2589240.2,933.4,633877.5],["0731",15902,4144,17.07,3337025.1,1229.56,1584283.6],["0801",34552,4828,10.72,3250526.65,877.57,-262206.67],["0802",26318,4509,13.39,2814083.35,798.32,-153054.53],["0803",21307,2946,15.76,3227011.3,961.28,142082.34],["0804",32253,4886,12.09,3515033.25,901.75,3001466.4],["0805",28278,4434,13.88,3621297.4,922.39,952688.25],["0806",26582,3533,13.96,3017896.35,813.01,1287286.51],["0807",24941,2928,14.9,2742290.9,737.97,931410.25],["0808",25666,3516,14.29,2803130.8,764.42,196035.83],["0809",27826,3155,13.2,2539712.9,691.64,1055430.5],["0810",22440,3273,15.11,3153961.05,930.1,1549791.89],["0811",21506,3084,15.42,1739381.6,524.38,1129344.75],["0812",22343,3330,14.95,1925399.2,576.47,1078882.66],["0813",20124,3092,16.07,1970863.35,609.61,84711.37],["0814",18574,2772,17.37,1858698.75,575.98,1221208.6],["0815",20100,2823,17.3,2288896.75,658.3,795793.03],["0816",19223,3057,17.19,1919059.85,580.83,1323960.98],["0817",17184,2983,18.53,2281808.8,716.65,1250508.08],["0818",17221,2877,19.17,2786221.75,844.05,1022188.37],["0819",17831,3114,18.42,2483622.05,756.28,685289.99],["0820",16333,2879,20.43,2695342.85,807.71,-185048.23],["0821",16290,2189,19.86,2898176.4,895.6,1869815.48],["0822",16604,2272,19.9,2885636.4,873.11,1547365.13],["0823",14081,2055,21.2,2403424,805.17,530924.37],["0824",14525,2826,20.7,2713802.3,902.49,1217979.83],["0825",14522,2707,21.55,2679025.65,856.19,-248162.02],["0826",14595,2430,21.43,3196805.1,1022,1322616.62],["0827",13401,1964,22.57,3266034.45,1080.04,1119256.83],["0828",14105,1897,21.77,3537314.55,1151.84,1661367.7],["0829",15901,2694,20.89,5518039.85,1661.06,1542996.95],["0830",14146,2052,21,2738124.2,921.93,1035620.87],["0831",14493,2866,20.31,2768218.3,940.29,93560.23],["0901",42642,4204,9.19,3684671.9,940.45,1165424.46],["0902",28499,2180,12.91,3786735.15,1029,984633.86],["0903",45602,4100,10.32,3779337.5,803.09,1134905.18],["0904",39978,3199,11.65,4462216.5,957.97,1818004.09],["0905",35209,2752,12.8,4485915.2,995.54,1622335.54],["0906",33573,2842,12.91,3438207.7,793.31,384910.76],["0907",28308,2909,14.95,3535338.55,835.38,1167536.46],["0908",27273,3108,15.44,2861914.9,679.63,990869.98],["0909",23689,2859,17.46,3300849.1,798.27,983448.85],["0910",25230,3059,16.94,3321475.5,777.32,704766.36],["0911",23555,2777,17.19,4019284.7,992.42,1264065.25],["0912",24792,2917,17.02,3601599.15,853.66,153029.83],["0913",23628,3181,17.05,2931556.55,727.79,1497834.72],["0914",23958,2991,15.89,2805777.5,737,1233417.52],["0915",23347,3210,16.06,3270489.95,872.36,1055476.04],["0916",24471,3362,15.7,2940231,765.09,1158839.69],["0917",21760,3317,17.42,3165983.3,835.13,859598.02],["0918",20442,3163,18.94,3008561.65,777,290812.31],["0919",23118,3137,17.26,3547169.85,889.02,765092.22],["0920",22369,3434,17.16,2681848.1,698.76,-439765.1],["0921",19071,3734,19.15,3327082.4,910.78,104174.54],["0922",19926,3521,18.57,3565714.8,963.71,1011182.66],["0923",21734,3308,17.39,3963334.45,1048.78,1912090.76],["0924",20661,3263,18.1,4465826.5,1194.39,1511648.12],["0925",18397,2385,20.33,4403286.1,1177.03,1325539.61],["0926",18184,2780,20.75,3607387.5,956.11,1459756.13],["0927",19263,3326,19.28,3040456.95,818.65,1229914.68],["0928",18919,2642,18.66,3156398.75,894.16,1344548.15],["0929",17676,2395,19.52,3287468.35,952.89,1624676.75],["0930",17456,2898,20.88,3545724.9,972.76,45885.57],["1001",24417,1858,19.4,2585459.2,545.69,1821473.76],["1002",27007,2797,15.48,3156012.1,755.03,1462527.06],["1003",25150,3492,18.06,3984295.25,877.4,1043255.25],["1004",29886,3310,15.56,4387613.95,943.37,1184078.47],["1005",32382,2902,14.47,4367560.4,932.24,1709018.42],["1006",29283,2926,16.61,4179513.6,859.1,243684.23],["1007",29102,2486,17.28,4723163.45,939,1915196.01]]</script>
+<script>
+(function(){
+"use strict";
+
+/* ---------- source ---------- */
+var SHEET_ID = "1nkpMbqktj8Bd0LQHSzMI0-6AJA4JDDka6lpT_cHF9gU";
+var SHEET_GID = "1031121061";
+var SNAPSHOT_AT = "2026-10-10 17:33";
+var START = "2026-01-01";
+// headers=4：第 1–4 列是表頭與自用運算列，從第 5 列開始讀
+var TQ = "select B,C,D,L,Q,V,Z where B is not null order by B";
+function gvizUrl(extraTqx){
+  return "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?gid=" + SHEET_GID +
+    "&headers=4&tqx=out:json" + (extraTqx || "") + "&tq=" + encodeURIComponent(TQ);
+}
+
+var METRICS = [
+  {key:"total", name:"總用戶數", src:"當日新增(D) + 前一日日活(C)", group:"user", fmt:"int"},
+  {key:"dau",   name:"日活躍數", src:"C 欄 · 日活躍數",          group:"user", fmt:"int"},
+  {key:"pr",    name:"充值PR",   src:"L 欄 · 充值PR",            group:"user", fmt:"pct"},
+  {key:"rc",    name:"總充值($)", src:"Q 欄 · 總充值($)",         group:"money", fmt:"money"},
+  {key:"arppu", name:"ARPPU",    src:"V 欄 · ARPPU",             group:"money", fmt:"money"},
+  {key:"ggr",   name:"GGR",      src:"Z 欄 · 總投注GGR",          group:"money", fmt:"money"}
+];
+var GROUP = {user:{label:"用戶", color:"var(--teal)"}, money:{label:"金流", color:"var(--amber)"}};
+
+/* ---------- dates ---------- */
+var DAY = 86400000;
+var WD = ["週日","週一","週二","週三","週四","週五","週六"];
+function toMs(iso){ var p = iso.split("-"); return Date.UTC(+p[0], +p[1]-1, +p[2]); }
+function toIso(ms){ var d = new Date(ms); return d.getUTCFullYear() + "-" + pad(d.getUTCMonth()+1) + "-" + pad(d.getUTCDate()); }
+function pad(n){ return (n < 10 ? "0" : "") + n; }
+function md(iso){ return iso.slice(5,7) + "/" + iso.slice(8,10); }
+function wd(iso){ return WD[new Date(toMs(iso)).getUTCDay()]; }
+
+/* ---------- number formats (no rounding beyond what the sheet shows) ---------- */
+function fmtVal(fmt, v){
+  if (v == null || isNaN(v)) return "—";
+  if (fmt === "pct") return v.toFixed(2) + "%";
+  if (fmt === "money") return v.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+  return Math.round(v).toLocaleString("en-US");
+}
+function fmtAxis(fmt, v){
+  if (fmt === "pct") return trimNum(v) + "%";
+  var a = Math.abs(v);
+  if (a >= 10000) return trimNum(v / 10000) + " 萬";
+  return Math.round(v).toLocaleString("en-US");
+}
+function trimNum(x){ var s = (Math.round(x * 10) / 10).toFixed(1); return s.replace(/\.0$/, ""); }
+
+/* ---------- data ---------- */
+var state = {rows: [], source: "loading", fetchedAt: null, range: "all"};
+
+function readSnapshot(){
+  var raw = JSON.parse(document.getElementById("snapshot").textContent);
+  return raw.map(function(r){
+    return {d:"2026-" + r[0].slice(0,2) + "-" + r[0].slice(2), dau:r[1], nu:r[2], pr:r[3], rc:r[4], arppu:r[5], ggr:r[6]};
+  });
+}
+
+function parseGviz(obj){
+  if (!obj || obj.status === "error" || !obj.table) throw new Error("gviz error");
+  var out = [];
+  obj.table.rows.forEach(function(r){
+    var c = r.c; if (!c || !c[0] || c[0].v == null) return;
+    var m = String(c[0].v).match(/Date\((\d+),(\d+),(\d+)/); if (!m) return;
+    var iso = m[1] + "-" + pad(+m[2]+1) + "-" + pad(+m[3]);
+    function v(i){ return c[i] && c[i].v != null && c[i].v !== "" ? Number(c[i].v) : null; }
+    var pr = v(3);
+    out.push({d:iso, dau:v(1), nu:v(2), pr:pr == null ? null : pr * 100, rc:v(4), arppu:v(5), ggr:v(6)});
+  });
+  return out;
+}
+
+function fetchJson(){
+  return new Promise(function(resolve, reject){
+    var ctl = ("AbortController" in window) ? new AbortController() : null;
+    var t = setTimeout(function(){ if (ctl) ctl.abort(); reject(new Error("timeout")); }, 9000);
+    fetch(gvizUrl(), {cache:"no-store", signal: ctl ? ctl.signal : undefined})
+      .then(function(res){ if (!res.ok) throw new Error("http " + res.status); return res.text(); })
+      .then(function(txt){
+        clearTimeout(t);
+        var m = txt.match(/setResponse\(([\s\S]*)\);?\s*$/);
+        resolve(parseGviz(JSON.parse(m ? m[1] : txt)));
+      })
+      .catch(function(e){ clearTimeout(t); reject(e); });
+  });
+}
+function fetchJsonp(){
+  return new Promise(function(resolve, reject){
+    var cb = "__ke7cb" + Date.now();
+    var s = document.createElement("script");
+    var done = false;
+    function clean(){ done = true; try { delete window[cb]; } catch(e){ window[cb] = undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
+    var t = setTimeout(function(){ if (!done){ clean(); reject(new Error("timeout")); } }, 7000);
+    window[cb] = function(obj){ clearTimeout(t); clean(); try { resolve(parseGviz(obj)); } catch(e){ reject(e); } };
+    s.onerror = function(){ clearTimeout(t); clean(); reject(new Error("blocked")); };
+    s.src = gvizUrl(";responseHandler:" + cb);
+    document.head.appendChild(s);
+  });
+}
+
+function load(){
+  setStatus("loading");
+  document.getElementById("reload").disabled = true;
+  fetchJson().catch(function(){ return fetchJsonp(); }).then(function(rows){
+    if (!rows.length) throw new Error("empty");
+    state.rows = rows; state.source = "live"; state.fetchedAt = new Date();
+  }).catch(function(){
+    if (!state.rows.length || state.source !== "live"){ state.rows = readSnapshot(); state.source = "snapshot"; }
+  }).then(function(){
+    document.getElementById("reload").disabled = false;
+    setStatus(state.source);
+    renderAll();
+  });
+}
+
+function setStatus(s){
+  var el = document.getElementById("status"), tx = document.getElementById("status-text");
+  el.setAttribute("data-state", s);
+  if (s === "loading"){ tx.textContent = "連線試算表中…"; el.title = ""; }
+  else if (s === "live"){
+    var f = state.fetchedAt;
+    tx.textContent = "即時 · " + pad(f.getHours()) + ":" + pad(f.getMinutes()) + " 讀取";
+    el.title = "已直接讀取 Google 試算表的最新資料";
+  } else {
+    tx.textContent = "快照 · " + SNAPSHOT_AT.slice(5).replace("-", "/") + " 擷取";
+    el.title = "這個環境連不到 Google 試算表，顯示擷取當下的資料";
+  }
+}
+
+/* build a continuous day axis from 1/1 to the latest date; missing days stay empty */
+function buildDays(){
+  var byDate = {}, last = START;
+  state.rows.forEach(function(r){ if (r.d >= START){ byDate[r.d] = r; if (r.d > last) last = r.d; } });
+  var days = [];
+  for (var ms = toMs(START), end = toMs(last); ms <= end; ms += DAY) days.push(toIso(ms));
+  var series = {total:[], dau:[], pr:[], rc:[], arppu:[], ggr:[], nu:[], has:[]};
+  days.forEach(function(iso, i){
+    var r = byDate[iso], prev = i > 0 ? byDate[days[i-1]] : null;
+    series.has.push(!!r);
+    series.dau.push(r ? r.dau : null);
+    series.nu.push(r ? r.nu : null);
+    series.pr.push(r ? r.pr : null);
+    series.rc.push(r ? r.rc : null);
+    series.arppu.push(r ? r.arppu : null);
+    series.ggr.push(r ? r.ggr : null);
+    // 唯一的運算：總用戶數 = 當日新增 + 前一日日活
+    series.total.push(r && prev && r.nu != null && prev.dau != null ? r.nu + prev.dau : null);
+    series.prevDau = series.prevDau || [];
+    series.prevDau.push(prev ? prev.dau : null);
+  });
+  return {days: days, s: series};
+}
+
+function sliceRange(all){
+  var n = all.days.length, from = 0;
+  if (state.range === "90") from = Math.max(0, n - 90);
+  if (state.range === "30") from = Math.max(0, n - 30);
+  var s = {};
+  Object.keys(all.s).forEach(function(k){ s[k] = all.s[k].slice(from); });
+  return {days: all.days.slice(from), s: s};
+}
+
+/* ---------- chart ---------- */
+var NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent){
+  var e = document.createElementNS(NS, tag);
+  for (var k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function niceStep(range, count){
+  var raw = range / count, mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * mag;
+}
+function textW(str){ var w = 0; for (var i = 0; i < str.length; i++) w += /[　-鿿]/.test(str[i]) ? 11 : 6.8; return w; }
+
+function xTicks(days){
+  var n = days.length, out = [];
+  if (n > 120){ days.forEach(function(d, i){ if (d.slice(8) === "01") out.push({i:i, t:(+d.slice(5,7)) + "月"}); }); }
+  else if (n > 45){ days.forEach(function(d, i){ var dd = d.slice(8); if (dd === "01" || dd === "15") out.push({i:i, t:md(d)}); }); }
+  else { for (var i = n - 1; i >= 0; i -= 7) out.unshift({i:i, t:md(days[i])}); }
+  return out;
+}
+
+function drawChart(card, m, view){
+  var box = card.querySelector(".chart");
+  var svg = box.querySelector("svg");
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  var W = box.clientWidth, H = box.clientHeight;
+  if (W < 50) return;
+  var vals = view.s[m.key], days = view.days, n = days.length;
+  var color = GROUP[m.group].color;
+
+  var lo = Infinity, hi = -Infinity;
+  vals.forEach(function(v){ if (v != null){ if (v < lo) lo = v; if (v > hi) hi = v; } });
+  if (lo === Infinity){ lo = 0; hi = 1; }
+  lo = Math.min(0, lo);
+  if (hi === lo) hi = lo + 1;
+  var step = niceStep(hi - lo, 4);
+  var y0 = Math.floor(lo / step) * step, y1 = Math.ceil(hi / step) * step;
+  var ticks = []; for (var t = y0; t <= y1 + step / 2; t += step) ticks.push(+t.toFixed(10));
+
+  var padL = Math.ceil(Math.max.apply(null, ticks.map(function(t){ return textW(fmtAxis(m.fmt, t)); }))) + 12;
+  var padR = 10, padT = 8, padB = 24;
+  var iw = W - padL - padR, ih = H - padT - padB;
+  function X(i){ return padL + (n <= 1 ? iw / 2 : i * iw / (n - 1)); }
+  function Y(v){ return padT + (1 - (v - y0) / (y1 - y0)) * ih; }
+
+  var defs = el("defs", {}, svg);
+  var gid = "g-" + m.key;
+  var grad = el("linearGradient", {id:gid, x1:"0", y1:"0", x2:"0", y2:"1"}, defs);
+  el("stop", {offset:"0%", "stop-color":color, "stop-opacity":"0.20"}, grad);
+  el("stop", {offset:"100%", "stop-color":color, "stop-opacity":"0"}, grad);
+
+  // missing days (no row in the sheet)
+  var colW = n > 1 ? iw / (n - 1) : iw;
+  for (var i = 0; i < n; i++){
+    if (!view.s.has[i]){
+      var j = i; while (j + 1 < n && !view.s.has[j + 1]) j++;
+      var gx0 = Math.max(padL, X(i) - colW / 2), gx1 = Math.min(padL + iw, X(j) + colW / 2);
+      el("rect", {class:"gap", x:gx0, y:padT, width:Math.max(1, gx1 - gx0), height:ih}, svg);
+      i = j;
+    }
+  }
+
+  // y grid + labels
+  ticks.forEach(function(t){
+    var y = Y(t);
+    el("line", {class: t === 0 && y0 < 0 ? "zero" : "gl", x1:padL, x2:padL + iw, y1:y, y2:y}, svg);
+    var lab = el("text", {class:"ax", x:padL - 8, y:y + 4, "text-anchor":"end"}, svg);
+    lab.textContent = fmtAxis(m.fmt, t);
+  });
+
+  // x labels, thinned so they never collide
+  var lastX = -Infinity;
+  xTicks(days).forEach(function(tk){
+    var x = X(tk.i), w = textW(tk.t);
+    if (x - lastX < Math.max(44, w + 12)) return;
+    lastX = x;
+    var anchor = "middle";
+    if (x - w / 2 < padL - 4) anchor = "start"; else if (x + w / 2 > W) anchor = "end";
+    var lab = el("text", {class:"ax", x:x, y:H - 6, "text-anchor":anchor}, svg);
+    lab.textContent = tk.t;
+  });
+
+  // area + line, broken at empty days
+  var base = Y(Math.max(y0, Math.min(0, y1)));
+  var seg = [];
+  function flush(){
+    if (!seg.length) return;
+    if (seg.length === 1){
+      el("circle", {cx:seg[0][0], cy:seg[0][1], r:2.5, fill:color}, svg);
+    } else {
+      var d = seg.map(function(p, k){ return (k ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join("");
+      el("path", {d: d + "L" + seg[seg.length-1][0].toFixed(1) + " " + base + "L" + seg[0][0].toFixed(1) + " " + base + "Z", fill:"url(#" + gid + ")"}, svg);
+      el("path", {d:d, class:"ln", stroke:color}, svg);
+    }
+    seg = [];
+  }
+  vals.forEach(function(v, i){ if (v == null) flush(); else seg.push([X(i), Y(v)]); });
+  flush();
+
+  // emphasised endpoint
+  var li = -1; for (var k = n - 1; k >= 0; k--){ if (vals[k] != null){ li = k; break; } }
+  if (li >= 0) el("circle", {cx:X(li), cy:Y(vals[li]), r:4, fill:color, stroke:"var(--panel)", "stroke-width":2}, svg);
+
+  // hover layer
+  var cross = el("line", {class:"cross", y1:padT, y2:padT + ih, x1:-10, x2:-10, visibility:"hidden"}, svg);
+  var dot = el("circle", {r:4.5, fill:color, stroke:"var(--panel)", "stroke-width":2, visibility:"hidden"}, svg);
+  box._chart = {X:X, Y:Y, n:n, padL:padL, iw:iw, vals:vals, days:days, view:view, m:m, cross:cross, dot:dot, color:color, li:li};
+  svg.setAttribute("aria-label", m.name + "，" + md(days[0]) + " 至 " + md(days[n-1]) + " 每日走勢" + (li >= 0 ? "，最新 " + md(days[li]) + " " + fmtVal(m.fmt, vals[li]) : ""));
+}
+
+function showTip(box, i){
+  var c = box._chart; if (!c) return;
+  i = Math.max(0, Math.min(c.n - 1, i)); box._idx = i;
+  var x = c.X(i), v = c.vals[i], iso = c.days[i];
+  c.cross.setAttribute("x1", x); c.cross.setAttribute("x2", x); c.cross.setAttribute("visibility", "visible");
+  if (v != null){ c.dot.setAttribute("cx", x); c.dot.setAttribute("cy", c.Y(v)); c.dot.setAttribute("visibility", "visible"); }
+  else c.dot.setAttribute("visibility", "hidden");
+  var tip = box.querySelector(".tip");
+  var html = '<div class="d">' + md(iso) + " " + wd(iso) + "</div>";
+  if (!c.view.s.has[i]) html += '<div class="muted">試算表沒有這天的資料</div>';
+  else {
+    html += '<div class="row"><span class="sw" style="background:' + c.color + '"></span><span class="k">' + c.m.name + "</span><b>" + fmtVal(c.m.fmt, v) + "</b></div>";
+    if (c.m.key === "total"){
+      var nu = c.view.s.nu[i], pd = c.view.s.prevDau[i];
+      html += v == null
+        ? '<div class="muted">缺前一日日活，無法計算</div>'
+        : '<div class="muted">新增 ' + fmtVal("int", nu) + " + 前日日活 " + fmtVal("int", pd) + "</div>";
+    }
+  }
+  tip.innerHTML = html; tip.hidden = false;
+  var tw = tip.offsetWidth, bw = box.clientWidth;
+  var left = x + 14; if (left + tw > bw) left = x - tw - 14; if (left < 0) left = 0;
+  tip.style.left = left + "px";
+}
+function hideTip(box){
+  var c = box._chart; box._idx = null;
+  if (c){ c.cross.setAttribute("visibility", "hidden"); c.dot.setAttribute("visibility", "hidden"); }
+  box.querySelector(".tip").hidden = true;
+}
+function idxFromEvent(box, e){
+  var c = box._chart, r = box.getBoundingClientRect();
+  return Math.round((e.clientX - r.left - c.padL) / c.iw * (c.n - 1));
+}
+
+/* ---------- cards ---------- */
+function buildCards(){
+  var grid = document.getElementById("grid");
+  METRICS.forEach(function(m){
+    var g = GROUP[m.group];
+    var card = document.createElement("article");
+    card.className = "card"; card.id = "card-" + m.key;
+    card.innerHTML =
+      '<div class="card-head"><div><div class="metric-name">' + m.name + '</div><span class="metric-src">' + m.src + '</span></div>' +
+      '<span class="tag ' + m.group + '">' + g.label + '</span></div>' +
+      '<div class="value-row"><span class="value">—</span><span class="asof"></span></div>' +
+      '<div class="compare"></div>' +
+      '<div class="chart" tabindex="0"><svg role="img"></svg><div class="tip" hidden></div></div>';
+    grid.appendChild(card);
+    var box = card.querySelector(".chart");
+    box.addEventListener("pointermove", function(e){ if (box._chart) showTip(box, idxFromEvent(box, e)); });
+    box.addEventListener("pointerdown", function(e){ if (box._chart) showTip(box, idxFromEvent(box, e)); });
+    box.addEventListener("pointerleave", function(){ hideTip(box); });
+    box.addEventListener("focus", function(){ if (box._chart) showTip(box, box._chart.li >= 0 ? box._chart.li : box._chart.n - 1); });
+    box.addEventListener("blur", function(){ hideTip(box); });
+    box.addEventListener("keydown", function(e){
+      if (!box._chart) return;
+      var i = box._idx == null ? box._chart.li : box._idx;
+      if (e.key === "ArrowLeft"){ showTip(box, i - 1); e.preventDefault(); }
+      else if (e.key === "ArrowRight"){ showTip(box, i + 1); e.preventDefault(); }
+      else if (e.key === "Escape"){ hideTip(box); }
+    });
+  });
+}
+
+function fillCard(m, all, view){
+  var card = document.getElementById("card-" + m.key);
+  var vals = all.s[m.key], days = all.days, li = -1;
+  for (var k = vals.length - 1; k >= 0; k--){ if (vals[k] != null){ li = k; break; } }
+  var valEl = card.querySelector(".value"), asof = card.querySelector(".asof"), cmp = card.querySelector(".compare");
+  if (li < 0){ valEl.textContent = "—"; asof.textContent = ""; cmp.textContent = ""; }
+  else {
+    valEl.textContent = fmtVal(m.fmt, vals[li]);
+    asof.textContent = md(days[li]) + " " + wd(days[li]);
+    var pi = li - 7, pv = pi >= 0 ? vals[pi] : null;
+    if (pv == null) cmp.innerHTML = '<span class="g">　</span>上週同日無資料';
+    else {
+      var cls = vals[li] > pv ? "up" : vals[li] < pv ? "down" : "";
+      var g = vals[li] > pv ? "▲" : vals[li] < pv ? "▼" : "＝";
+      cmp.innerHTML = '<span class="g ' + cls + '">' + g + "</span> 上週同日 " + md(days[pi]) + "　" + fmtVal(m.fmt, pv);
+    }
+  }
+  drawChart(card, m, view);
+}
+
+function renderTable(view){
+  var tb = document.getElementById("tbody"), out = [], days = view.days, s = view.s;
+  function cell(fmt, v, neg){ return v == null ? '<td class="na">—</td>' : '<td' + (neg && v < 0 ? ' class="neg"' : "") + ">" + fmtVal(fmt, v) + "</td>"; }
+  var count = 0;
+  for (var i = days.length - 1; i >= 0; i--){
+    if (!s.has[i]) continue;
+    count++;
+    out.push("<tr><td>" + md(days[i]) + " " + wd(days[i]) + "</td>" +
+      cell("int", s.total[i]) + cell("int", s.dau[i]) + cell("int", s.nu[i]) + cell("pct", s.pr[i]) +
+      cell("money", s.rc[i]) + cell("money", s.arppu[i]) + cell("money", s.ggr[i], true) + "</tr>");
+  }
+  tb.innerHTML = out.join("");
+  document.getElementById("daily-hint").textContent = count + " 天 · 新到舊";
+}
+
+function missingRuns(all){
+  var runs = [], s = all.s.has, d = all.days;
+  for (var i = 0; i < s.length; i++){
+    if (!s[i]){ var j = i; while (j + 1 < s.length && !s[j + 1]) j++; runs.push(i === j ? md(d[i]) : md(d[i]) + "–" + md(d[j])); i = j; }
+  }
+  return runs;
+}
+
+function renderAll(){
+  if (!state.rows.length) return;
+  var all = buildDays(), view = sliceRange(all);
+  METRICS.forEach(function(m){ fillCard(m, all, view); });
+  renderTable(view);
+  var d = view.days;
+  document.getElementById("span-pill").textContent = d[0] + " → " + d[d.length - 1];
+  var runs = missingRuns(all);
+  var src = state.source === "live"
+    ? "目前顯示的是試算表的即時資料，按「重新讀取」可再抓一次。"
+    : "這個環境連不到 Google 試算表，目前顯示 " + SNAPSHOT_AT + " 擷取的快照。把這個頁面放到 GitHub Pages 等一般網頁空間，每次打開都會直接讀試算表。";
+  document.getElementById("note").innerHTML =
+    "<b>資料來源</b>：Google 試算表「2026 Q2 KE7 產品數據」→ 產品總表(日)，從第 5 列開始讀，欄位 <code>B 日期 · C 日活躍數 · D 新增(註冊) · L 充值PR · Q 總充值($) · V ARPPU · Z 總投注GGR</code>。" +
+    "除了總用戶數（當日新增 + 前一日日活）之外，所有數字都直接取自試算表。" +
+    (runs.length ? "試算表目前沒有 " + runs.join("、") + " 的資料，圖上以灰底留白，前一天缺資料時總用戶數也會留空。" : "") +
+    "<br>" + src;
+}
+
+/* ---------- wiring ---------- */
+buildCards();
+document.querySelectorAll(".seg button").forEach(function(b){
+  b.addEventListener("click", function(){
+    state.range = b.getAttribute("data-range");
+    document.querySelectorAll(".seg button").forEach(function(o){ o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+    try { localStorage.setItem("ke7-range", state.range); } catch(e){}
+    renderAll();
+  });
+});
+document.getElementById("reload").addEventListener("click", load);
+try {
+  var saved = localStorage.getItem("ke7-range");
+  if (saved === "90" || saved === "30"){ var sb = document.getElementById("range-" + saved); if (sb) sb.click(); }
+} catch(e){}
+
+var rt;
+if ("ResizeObserver" in window){
+  var ro = new ResizeObserver(function(){ clearTimeout(rt); rt = setTimeout(renderAll, 80); });
+  ro.observe(document.getElementById("grid"));
+} else window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(renderAll, 80); });
+
+// 先用快照畫好，再嘗試讀即時資料
+state.rows = readSnapshot(); state.source = "snapshot";
+renderAll();
+load();
+})();
+</script>
+
+</body>
+</html>
