@@ -48,11 +48,12 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:
 .brand .sub{display:block;font:500 11px/1.4 var(--font-num);letter-spacing:.2em;color:var(--ink-3);text-transform:uppercase}
 .controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
 .ctl{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.dates{display:inline-flex;align-items:center;gap:8px}
-.dates .to{font-size:12px;color:var(--ink-3)}
-.dates input{appearance:none;-webkit-appearance:none;background:var(--raised);border:1px solid var(--line);border-radius:9px;padding:6px 10px;font:500 13px/1.2 var(--font-num);color:var(--ink);color-scheme:dark;min-width:0;width:142px}
-.dates input.on{border-color:var(--amber-deep)}
-.dates input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.dates{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.dp{display:inline-flex;align-items:center;gap:6px}
+.dp .dl{font-size:12px;color:var(--ink-3)}
+.dp select{appearance:none;-webkit-appearance:none;background:var(--raised) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%238b93a1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat right 8px center;border:1px solid var(--line);border-radius:9px;padding:6px 24px 6px 10px;font:500 13px/1.2 var(--font-num);color:var(--ink);color-scheme:dark;min-width:0;cursor:pointer}
+.dp.on select{border-color:var(--amber-deep)}
+.dp select:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .ctl-label{font-size:12px;color:var(--ink-3)}
 .seg{display:inline-flex;background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
 .seg button{appearance:none;border:0;background:transparent;cursor:pointer;padding:6px 12px;border-radius:7px;font:500 13px/1.2 var(--font-ui);color:var(--ink-2)}
@@ -165,9 +166,8 @@ tbody tr:hover td{background:var(--raised)}
           <button type="button" id="range-30" data-range="30" aria-pressed="false"><span class="n">30</span> 日</button>
         </div>
         <div class="dates" role="group" aria-label="自訂日期區間">
-          <input type="date" id="date-from" aria-label="起始日期">
-          <span class="to">至</span>
-          <input type="date" id="date-to" aria-label="結束日期">
+          <div class="dp" id="dp-from" role="group" aria-label="起始日期"><span class="dl">從</span><select class="py" aria-label="起始年"></select><select class="pm" aria-label="起始月"></select><select class="pd" aria-label="起始日"></select></div>
+          <div class="dp" id="dp-to" role="group" aria-label="結束日期"><span class="dl">到</span><select class="py" aria-label="結束年"></select><select class="pm" aria-label="結束月"></select><select class="pd" aria-label="結束日"></select></div>
         </div>
       </div>
       <span class="status" id="status" data-state="loading" role="status"><span class="dot"></span><span id="status-text">連線試算表中…</span></span>
@@ -397,7 +397,7 @@ function xTicks(days){
   var n = days.length, out = [];
   if (n > 120){ days.forEach(function(d, i){ if (d.slice(8) === "01") out.push({i:i, t:(+d.slice(5,7)) + "月"}); }); }
   else if (n > 45){ days.forEach(function(d, i){ var dd = d.slice(8); if (dd === "01" || dd === "15") out.push({i:i, t:md(d)}); }); }
-  else { for (var i = n - 1; i >= 0; i -= 7) out.unshift({i:i, t:md(days[i])}); }
+  else { for (var i = n - 1; i >= 0; i -= 7) out.unshift({i:i, t:md(days[i])}); out.fromEnd = true; }
   return out;
 }
 
@@ -462,17 +462,29 @@ function drawChart(card, m, view){
     rl.textContent = fmtAxis(m.fmt, t);
   });
 
-  // x labels, thinned so they never collide
-  var lastX = -Infinity;
-  xTicks(days).forEach(function(tk){
-    var x = X(tk.i), w = textW(tk.t);
-    if (x - lastX < Math.max(44, w + 12)) return;
-    lastX = x;
+  // x labels: pick ONE even step (every 1 / 2 / 3 / 4 / 6 / 12 ticks) that fits, so the spacing is regular.
+  // Geometry is measured on a nominal plot width (not this chart's own y-axis width) so every card of the
+  // same width gets the same step.
+  var ticks = xTicks(days);
+  var avail = Math.max(120, W - 64);
+  function nom(i){ return n > 1 ? avail * i / (n - 1) : 0; }
+  var wMax = 0; ticks.forEach(function(tk){ var w = textW(tk.t); if (w > wMax) wMax = w; });
+  var need = wMax + 18;
+  function fits(k){
+    for (var j = 0; j + k < ticks.length; j += k){ if (nom(ticks[j + k].i) - nom(ticks[j].i) < need) return false; }
+    return true;
+  }
+  var ladder = [1, 2, 3, 4, 6, 12], step = ladder[ladder.length - 1];
+  for (var q = 0; q < ladder.length; q++){ if (fits(ladder[q])){ step = ladder[q]; break; } }
+  for (var j = 0; ; j++){
+    var idx = ticks.fromEnd ? ticks.length - 1 - j * step : j * step;
+    if (idx < 0 || idx >= ticks.length) break;
+    var tk = ticks[idx], x = X(tk.i), w = textW(tk.t);
     var anchor = "middle";
     if (x - w / 2 < padL - 4) anchor = "start"; else if (x + w / 2 > W) anchor = "end";
     var lab = el("text", {class:"ax", x:x, y:H - 6, "text-anchor":anchor}, svg);
     lab.textContent = tk.t;
-  });
+  }
 
   // area + line, broken at empty days
   var base = Y(Math.max(y0, Math.min(0, y1)));
@@ -549,6 +561,25 @@ function idxFromEvent(box, e){
   return Math.round((e.clientX - r.left - c.padL) / c.iw * (c.n - 1));
 }
 
+/* every chart shares the same day axis, so one index = the same date on all six */
+var hoverDay = null;
+function chartBoxes(){ return Array.prototype.slice.call(document.querySelectorAll(".chart")).filter(function(b){ return b._chart; }); }
+function syncShow(i){
+  var boxes = chartBoxes(); if (!boxes.length) return;
+  var c0 = boxes[0]._chart;
+  i = Math.max(0, Math.min(c0.n - 1, i));
+  hoverDay = c0.days[i];
+  boxes.forEach(function(b){ showTip(b, i); });
+}
+function syncHide(){
+  hoverDay = null;
+  document.querySelectorAll(".chart").forEach(function(b){ hideTip(b); });
+}
+function currentIdx(box){
+  if (hoverDay){ var k = box._chart.days.indexOf(hoverDay); if (k >= 0) return k; }
+  return box._chart.li >= 0 ? box._chart.li : box._chart.n - 1;
+}
+
 /* ---------- cards ---------- */
 function buildCards(){
   var grid = document.getElementById("grid");
@@ -567,17 +598,21 @@ function buildCards(){
       '<div class="chart" tabindex="0"><svg role="img"></svg><div class="tip" hidden></div></div>';
     grid.appendChild(card);
     var box = card.querySelector(".chart");
-    box.addEventListener("pointermove", function(e){ if (box._chart) showTip(box, idxFromEvent(box, e)); });
-    box.addEventListener("pointerdown", function(e){ if (box._chart) showTip(box, idxFromEvent(box, e)); });
-    box.addEventListener("pointerleave", function(){ hideTip(box); });
-    box.addEventListener("focus", function(){ if (box._chart) showTip(box, box._chart.li >= 0 ? box._chart.li : box._chart.n - 1); });
-    box.addEventListener("blur", function(){ hideTip(box); });
+    box.addEventListener("pointermove", function(e){ if (box._chart) syncShow(idxFromEvent(box, e)); });
+    box.addEventListener("pointerdown", function(e){ if (box._chart) syncShow(idxFromEvent(box, e)); });
+    // mouse: leaving the chart clears every chart; touch: keep the date pinned so you can scroll to the other charts
+    box.addEventListener("pointerleave", function(e){ if (e.pointerType !== "touch") syncHide(); });
+    box.addEventListener("focus", function(){ if (box._chart) syncShow(currentIdx(box)); });
+    box.addEventListener("blur", function(e){
+      var to = e.relatedTarget;
+      if (!(to && to.classList && to.classList.contains("chart"))) syncHide();
+    });
     box.addEventListener("keydown", function(e){
       if (!box._chart) return;
-      var i = box._idx == null ? box._chart.li : box._idx;
-      if (e.key === "ArrowLeft"){ showTip(box, i - 1); e.preventDefault(); }
-      else if (e.key === "ArrowRight"){ showTip(box, i + 1); e.preventDefault(); }
-      else if (e.key === "Escape"){ hideTip(box); }
+      var i = currentIdx(box);
+      if (e.key === "ArrowLeft"){ syncShow(i - 1); e.preventDefault(); }
+      else if (e.key === "ArrowRight"){ syncShow(i + 1); e.preventDefault(); }
+      else if (e.key === "Escape"){ syncHide(); }
     });
   });
 }
@@ -633,22 +668,55 @@ function missingRuns(all){
   return runs;
 }
 
+var dateMin = null, dateMax = null;
+function pad2(n){ return (n < 10 ? "0" : "") + n; }
+function clampN(v, lo, hi){ return v < lo ? lo : v > hi ? hi : v; }
+function setOpts(sel, lo, hi, val, unit){
+  var n = sel.options.length;
+  if (!n || +sel.options[0].value !== lo || +sel.options[n - 1].value !== hi){
+    sel.innerHTML = "";
+    for (var i = lo; i <= hi; i++){
+      var o = document.createElement("option");
+      o.value = i; o.textContent = i + unit; sel.appendChild(o);
+    }
+  }
+  sel.value = String(val);
+}
+function fillPicker(id, val){
+  var g = document.getElementById(id);
+  var y = +val.slice(0, 4), m = +val.slice(5, 7), d = +val.slice(8, 10);
+  var y0 = +dateMin.slice(0, 4), y1 = +dateMax.slice(0, 4);
+  y = clampN(y, y0, y1);
+  var m0 = y === y0 ? +dateMin.slice(5, 7) : 1, m1 = y === y1 ? +dateMax.slice(5, 7) : 12;
+  m = clampN(m, m0, m1);
+  var d0 = (y === y0 && m === m0) ? +dateMin.slice(8, 10) : 1;
+  var d1 = (y === y1 && m === m1) ? +dateMax.slice(8, 10) : new Date(y, m, 0).getDate();
+  d = clampN(d, d0, d1);
+  setOpts(g.querySelector(".py"), y0, y1, y, "年");
+  setOpts(g.querySelector(".pm"), m0, m1, m, "月");
+  setOpts(g.querySelector(".pd"), d0, d1, d, "日");
+}
+function readPicker(id){
+  var g = document.getElementById(id);
+  return g.querySelector(".py").value + "-" + pad2(+g.querySelector(".pm").value) + "-" + pad2(+g.querySelector(".pd").value);
+}
+
 function renderAll(){
   if (!state.rows.length) return;
   var all = buildDays(), view = sliceRange(all);
   METRICS.forEach(function(m){ fillCard(m, all, view); });
   renderTable(view);
-  var fi = document.getElementById("date-from"), ti = document.getElementById("date-to");
-  fi.min = ti.min = all.days[0]; fi.max = ti.max = all.days[all.days.length - 1];
-  if (document.activeElement !== fi) fi.value = view.days[0];
-  if (document.activeElement !== ti) ti.value = view.days[view.days.length - 1];
-  fi.classList.toggle("on", state.range === "custom"); ti.classList.toggle("on", state.range === "custom");
+  dateMin = all.days[0]; dateMax = all.days[all.days.length - 1];
+  fillPicker("dp-from", view.days[0]); fillPicker("dp-to", view.days[view.days.length - 1]);
+  document.getElementById("dp-from").classList.toggle("on", state.range === "custom");
+  document.getElementById("dp-to").classList.toggle("on", state.range === "custom");
   var d = view.days;
   document.getElementById("span-pill").textContent = d[0] + " → " + d[d.length - 1];
   var runs = missingRuns(all);
   var src = state.source === "live"
     ? "目前顯示的是試算表的即時資料，按「重新讀取」可再抓一次。"
     : "這個環境連不到 Google 試算表，目前顯示 " + SNAPSHOT_AT + " 擷取的快照。把這個頁面放到 GitHub Pages 等一般網頁空間，每次打開都會直接讀試算表。";
+  if (hoverDay){ var hk = view.days.indexOf(hoverDay); if (hk >= 0) syncShow(hk); else syncHide(); }
   document.getElementById("note").innerHTML =
     "<b>資料來源</b>：Google 試算表「2026 Q2 KE7 產品數據」→ 產品總表(日)，從第 5 列開始讀，欄位 <code>B 日期 · C 日活躍數 · D 新增(註冊) · L 充值PR · Q 總充值($) · V ARPPU · Z 總投注GGR</code>。" +
     "除了總用戶數（" + (baseInfo.d ? md(baseInfo.d) : "1/1") + " 日活 + 之後每天的新增逐日累加）之外，所有數字都直接取自試算表。" +
@@ -667,17 +735,22 @@ document.querySelectorAll(".seg button").forEach(function(b){
   });
 });
 document.getElementById("reload").addEventListener("click", load);
-function onDates(){
-  var fi = document.getElementById("date-from"), ti = document.getElementById("date-to");
-  var f = fi.value, t = ti.value;
-  if (!f || !t) return;
-  if (f > t){ var x = f; f = t; t = x; fi.value = f; ti.value = t; }
+document.addEventListener("pointerdown", function(e){
+  if (hoverDay && !(e.target.closest && e.target.closest(".chart"))) syncHide();
+});
+function onPick(id){
+  if (!dateMin) return;
+  fillPicker(id, readPicker(id));
+  var f = readPicker("dp-from"), t = readPicker("dp-to");
+  if (f > t){ var x = f; f = t; t = x; }
+  fillPicker("dp-from", f); fillPicker("dp-to", t);
   state.range = "custom"; state.from = f; state.to = t;
   document.querySelectorAll(".seg button").forEach(function(o){ o.setAttribute("aria-pressed", "false"); });
   renderAll();
 }
-document.getElementById("date-from").addEventListener("change", onDates);
-document.getElementById("date-to").addEventListener("change", onDates);
+["dp-from", "dp-to"].forEach(function(id){
+  document.getElementById(id).addEventListener("change", function(){ onPick(id); });
+});
 try {
   var saved = localStorage.getItem("ke7-range");
   if (saved === "90" || saved === "30"){ var sb = document.getElementById("range-" + saved); if (sb) sb.click(); }
