@@ -158,6 +158,115 @@ tbody tr:hover td{background:var(--raised)}
   .status[data-state="loading"] .dot{animation:none}
   .daily summary::before{transition:none}
 }
+/* ===== 同時在線熱力圖 ===== */
+.heat{margin-top:16px;gap:8px}
+.tag.sim{color:var(--ink-2);background:transparent;border:1px dashed var(--ink-3)}
+.heat-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:6px}
+.hseg{display:inline-flex;background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.hseg button{appearance:none;border:0;background:transparent;cursor:pointer;padding:6px 12px;border-radius:7px;font:500 13px/1.2 var(--font-ui);color:var(--ink-2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.hseg button:hover{color:var(--ink)}
+.hseg button[aria-pressed="true"]{background:var(--selected);color:var(--ink)}
+.hseg button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.hseg .sw{width:8px;height:8px;border-radius:2px}
+.heat-desc{font:400 12.5px/1.6 var(--font-ui);color:var(--ink-2)}
+.heat-desc .use{color:var(--amber)}
+.heat-basis{font:400 12px/1.5 var(--font-num);color:var(--ink-3)}
+.heat-sumhd{margin-top:6px;font:500 12px/1.4 var(--font-ui);color:var(--ink-3);letter-spacing:.02em}
+.heat-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hs{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:0}
+.hs .k{display:block;font:400 12px/1.4 var(--font-ui);color:var(--ink-3)}
+.hs .v{display:block;font:600 19px/1.35 var(--font-num);color:var(--ink);white-space:nowrap}
+.hs .s{display:block;font:400 12px/1.4 var(--font-num);color:var(--ink-2)}
+.heat-box{position:relative;margin-top:10px}
+.hm{display:grid;grid-template-columns:40px repeat(24,minmax(0,1fr)) 92px;gap:3px}
+.hm .hh{font:400 10.5px/1 var(--font-num);color:var(--ink-3);padding-bottom:5px;align-self:end;white-space:nowrap;overflow:visible}
+.hm .hl{font:400 12px/1 var(--font-ui);color:var(--ink-3);display:flex;align-items:center}
+.hm .hl.best{color:var(--ink);font-weight:500}
+.hm .hh.cap{padding-left:8px}
+.hm .hc{height:30px;border-radius:4px;cursor:crosshair}
+.hm .hc.pk{box-shadow:inset 0 0 0 2px var(--bg)}
+.hm .hc.lo{box-shadow:inset 0 0 0 2px var(--ink-2)}
+.hm .hc.on{outline:2px solid var(--ink);outline-offset:1px;box-shadow:0 0 0 4px var(--bg);position:relative;z-index:1}
+.hm .sd{display:flex;align-items:center;gap:6px;padding-left:8px;min-width:0}
+.hm .sd .bw{flex:1;min-width:0}
+.hm .sd i{display:block;height:8px;border-radius:2px;min-width:2px;opacity:.4}
+.hm .sd.best i{opacity:1}
+.hm .sd span.v{flex:none;width:40px;text-align:right;font:400 11px/1 var(--font-num);color:var(--ink-2)}
+.hm .sd.best span.v{color:var(--ink);font-weight:600}
+.hm .hl.cap{align-items:flex-start;padding-top:10px}
+.hm .hcv{grid-column:2 / span 24;height:84px;margin-top:6px;position:relative}
+.hm .hcv svg{display:block;width:100%;height:100%;overflow:visible}
+.hcv .cl{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.hcv .cg{stroke:var(--grid);stroke-width:1}
+.hcv .cv{font:400 10.5px var(--font-num);fill:var(--ink-2)}
+.heat-legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font:400 12px/1.5 var(--font-num);color:var(--ink-3);margin-top:4px}
+.heat-legend .sws{display:inline-flex;gap:2px}
+.heat-legend .sws i{display:block;width:16px;height:10px;border-radius:2px}
+.heat-legend .mk{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 5px 0 12px;vertical-align:-1px}
+.heat-legend .hint{font-family:var(--font-ui);margin-left:12px}
+.hm .hm-msg{grid-column:1/-1;padding:32px 8px;text-align:center;font:400 13px/1.6 var(--font-ui);color:var(--ink-3)}
+.heat-box .htip{background:rgba(11,13,16,.88);border-color:var(--line)}
+@media (max-width:640px){
+  .heat-sum{grid-template-columns:1fr;gap:6px}
+  .hs{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;padding:8px 12px}
+  .hs .k{flex-basis:100%}
+  .hs .v{font-size:16px}
+  .hm{grid-template-columns:30px repeat(24,minmax(0,1fr)) 30px;gap:2px}
+  .hm .hc{height:24px;border-radius:3px}
+  .hm .hh.x6{visibility:hidden}
+  .hm .hh.cap{padding-left:3px;font-size:10px}
+  .hm .hl{font-size:11px}
+  .hm .sd{padding-left:3px}
+  .hm .sd span.v{display:none}
+  .hm .hcv{height:70px}
+  .heat-legend .hint{margin-left:0;flex-basis:100%}
+  .heat-legend .mk{margin-left:0}
+}
+/* ===== 日期區間：單一日曆 ===== */
+.rp{position:relative}
+.rp-btn{display:inline-flex;align-items:center;gap:8px;background:var(--raised);border:1px solid var(--line);border-radius:9px;padding:6px 12px;font:500 13px/1.2 var(--font-num);color:var(--ink);cursor:pointer;white-space:nowrap}
+.rp-btn svg{width:15px;height:15px;flex:none;color:var(--ink-2)}
+.rp-btn:hover{border-color:var(--ink-3)}
+.rp-btn.on{border-color:var(--amber-deep)}
+.rp-btn.on svg{color:var(--amber)}
+.rp-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.rp-scrim{position:fixed;inset:0;z-index:30;background:transparent}
+.rp-pop{position:absolute;top:calc(100% + 8px);left:0;z-index:31;width:308px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 18px 40px var(--shadow)}
+.rp-hint{font:500 12.5px/1.4 var(--font-ui);color:var(--amber);margin:0 2px 6px}
+.rp-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.rp-arw{appearance:none;border:0;background:transparent;color:var(--ink-2);width:34px;height:34px;border-radius:8px;font:400 20px/1 var(--font-ui);cursor:pointer}
+.rp-arw:hover:not(:disabled){background:var(--raised);color:var(--ink)}
+.rp-arw:disabled{opacity:.25;cursor:default}
+.rp-title{appearance:none;border:0;background:transparent;color:var(--ink);font:600 14px/1 var(--font-ui);padding:9px 10px;border-radius:8px;cursor:pointer}
+.rp-title:hover{background:var(--raised)}
+.rp-title::after{content:"▾";margin-left:6px;color:var(--ink-3);font-size:11px}
+.rp-wk,.rp-days{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px}
+.rp-wk span{text-align:center;font:400 11.5px/28px var(--font-ui);color:var(--ink-3)}
+.rp-days button{appearance:none;border:0;background:transparent;height:36px;padding:0;font:500 13px/1 var(--font-num);color:var(--ink);cursor:pointer;border-radius:0}
+.rp-days button:not(.in):not(:disabled):hover{background:var(--raised);border-radius:8px}
+.rp-days button:disabled{color:var(--ink-3);opacity:.35;cursor:default}
+.rp-days button.in{background:var(--amber-soft)}
+.rp-days button.s,.rp-days button.e{background:var(--amber);color:var(--amber-ink);font-weight:700}
+.rp-days button.s{border-radius:8px 0 0 8px}
+.rp-days button.e{border-radius:0 8px 8px 0}
+.rp-days button.s.e{border-radius:8px}
+.rp-days button:focus-visible,.rp-months button:focus-visible,.rp-title:focus-visible,.rp-arw:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+.rp-months{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:4px 0}
+.rp-months button{appearance:none;border:1px solid var(--line);background:var(--raised);color:var(--ink);height:42px;border-radius:9px;font:500 13px var(--font-ui);cursor:pointer}
+.rp-months button:hover:not(:disabled){border-color:var(--ink-3)}
+.rp-months button.cur{border-color:var(--amber-deep);color:var(--amber)}
+.rp-months button:disabled{opacity:.3;cursor:default}
+.rp-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;padding-top:12px;border-top:1px solid var(--line)}
+.rp-sel{flex:1;min-width:0;font:500 12.5px/1.4 var(--font-num);color:var(--ink-2)}
+.rp-cancel{appearance:none;border:0;background:transparent;color:var(--ink-2);font:500 13px/1.2 var(--font-ui);padding:6px 10px;border-radius:8px;cursor:pointer}
+.rp-cancel:hover{color:var(--ink);background:var(--raised)}
+@media (max-width:640px){
+  .rp-scrim{background:rgba(0,0,0,.55)}
+  .rp-pop{position:fixed;left:12px !important;right:12px;bottom:12px;top:auto;width:auto;padding:16px}
+  .rp-days button{height:42px}
+  .rp-sel{flex-basis:100%}
+  .rp-cancel{margin-left:auto}
+}
 </style>
 
 <div class="wrap">
@@ -177,9 +286,26 @@ tbody tr:hover td{background:var(--raised)}
           <button type="button" id="range-90" data-range="90" aria-pressed="false"><span class="n">90</span> 日</button>
           <button type="button" id="range-30" data-range="30" aria-pressed="false"><span class="n">30</span> 日</button>
         </div>
-        <div class="dates" role="group" aria-label="自訂日期區間">
-          <div class="dp" id="dp-from" role="group" aria-label="起始日期"><span class="dl">從</span><select class="py" aria-label="起始年"></select><select class="pm" aria-label="起始月"></select><select class="pd" aria-label="起始日"></select></div>
-          <div class="dp" id="dp-to" role="group" aria-label="結束日期"><span class="dl">到</span><select class="py" aria-label="結束年"></select><select class="pm" aria-label="結束月"></select><select class="pd" aria-label="結束日"></select></div>
+        <div class="rp" id="rp">
+          <button type="button" class="rp-btn" id="rp-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="rp-pop">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>
+            <span id="rp-label">—</span>
+          </button>
+          <div class="rp-scrim" id="rp-scrim" hidden></div>
+          <div class="rp-pop" id="rp-pop" role="dialog" aria-label="選擇日期區間" hidden>
+            <div class="rp-hint" id="rp-hint" aria-live="polite"></div>
+            <div class="rp-nav">
+              <button type="button" class="rp-arw" data-nav="-1" aria-label="上一頁">‹</button>
+              <button type="button" class="rp-title" id="rp-title"></button>
+              <button type="button" class="rp-arw" data-nav="1" aria-label="下一頁">›</button>
+            </div>
+            <div id="rp-body"></div>
+            <div class="rp-foot">
+              <span class="rp-sel" id="rp-sel"></span>
+              <button type="button" class="rp-cancel" id="rp-cancel">取消</button>
+              <button type="button" class="btn" id="rp-ok" disabled>套用</button>
+            </div>
+          </div>
         </div>
       </div>
       <span class="status" id="status" data-state="loading" role="status"><span class="dot"></span><span id="status-text">連線試算表中…</span></span>
@@ -189,13 +315,44 @@ tbody tr:hover td{background:var(--raised)}
 
   <section class="intro">
     <div>
-      <div class="eyebrow">產品總表(日) · 2026 Q2 KE7 產品數據</div>
-      <h2>每日走勢<small>數字直接取自試算表</small></h2>
+      <div class="eyebrow">產品總表(日)</div>
+      <h2>每日走勢</h2>
     </div>
     <span class="span-pill" id="span-pill">—</span>
   </section>
 
   <main class="grid" id="grid"></main>
+
+  <section class="card heat" id="heat" aria-label="同時在線熱力圖">
+    <div class="card-head">
+      <div>
+        <span class="metric-name">同時在線熱力圖</span>
+        <span class="metric-src">後台即時在線人數 · 肯亞時間 · 星期 × 時段 · 跟上方日期區間連動</span>
+      </div>
+      <span class="tag user">在線</span>
+    </div>
+    <div class="heat-bar">
+      <div class="hseg" id="heat-seg" role="group" aria-label="在線類型">
+        <button type="button" data-s="m" aria-pressed="true"><span class="sw" style="background:#3ccf9d"></span>會員</button>
+        <button type="button" data-s="v" aria-pressed="false"><span class="sw" style="background:#7aa7f7"></span>訪客</button>
+        <button type="button" data-s="t" aria-pressed="false"><span class="sw" style="background:#f4b740"></span>合計</button>
+      </div>
+      <div class="hseg" id="heat-meth" role="group" aria-label="計算方式">
+        <button type="button" data-m="p" aria-pressed="true">平常人數</button>
+        <button type="button" data-m="a" aria-pressed="false">含特殊日平均</button>
+        <button type="button" data-m="k" aria-pressed="false">尖峰人數</button>
+      </div>
+    </div>
+    <div class="heat-desc" id="heat-desc"></div>
+    <div class="heat-basis" id="heat-basis"></div>
+    <div class="heat-sumhd" id="heat-sumhd"></div>
+    <div class="heat-sum" id="heat-sum"></div>
+    <div class="heat-box" id="heat-box">
+      <div class="hm" id="hm"></div>
+      <div class="tip htip" hidden></div>
+    </div>
+    <div class="heat-legend" id="heat-legend"></div>
+  </section>
 
   <details class="daily" id="daily">
     <summary>逐日明細 <span class="hint" id="daily-hint"></span></summary>
@@ -231,11 +388,11 @@ function gvizUrl(extraTqx){
 
 var METRICS = [
   {key:"total", name:"總用戶數與新增用戶數", leftName:"總用戶數", src:"", group:"user", fmt:"int", right:{key:"nu", name:"新增用戶數", color:"var(--sky)"}},
-  {key:"dau",   name:"日活躍數", src:"C 欄 · 日活躍數",          group:"user", fmt:"int"},
-  {key:"pr",    name:"充值PR",   src:"L 欄 · 充值PR",            group:"user", fmt:"pct"},
-  {key:"rc",    name:"總充值($)", src:"Q 欄 · 總充值($)",         group:"money", fmt:"money"},
-  {key:"arppu", name:"ARPPU",    src:"V 欄 · ARPPU",             group:"money", fmt:"money"},
-  {key:"ggr",   name:"GGR",      src:"Z 欄 · 總投注GGR",          group:"money", fmt:"money"}
+  {key:"dau",   name:"日活躍數", src:"",          group:"user", fmt:"int"},
+  {key:"pr",    name:"充值PR",   src:"",            group:"user", fmt:"pct"},
+  {key:"rc",    name:"總充值($)", src:"",         group:"money", fmt:"money"},
+  {key:"arppu", name:"ARPPU",    src:"",             group:"money", fmt:"money"},
+  {key:"ggr",   name:"GGR",      src:"",          group:"money", fmt:"money"}
 ];
 var GROUP = {user:{label:"用戶", color:"var(--teal)"}, money:{label:"金流", color:"var(--amber)"}};
 
@@ -718,23 +875,256 @@ function renderAll(){
   var all = buildDays(), view = sliceRange(all);
   METRICS.forEach(function(m){ fillCard(m, all, view); });
   renderTable(view);
+  renderHeat(view);
   dateMin = all.days[0]; dateMax = all.days[all.days.length - 1];
-  fillPicker("dp-from", view.days[0]); fillPicker("dp-to", view.days[view.days.length - 1]);
-  document.getElementById("dp-from").classList.toggle("on", state.range === "custom");
-  document.getElementById("dp-to").classList.toggle("on", state.range === "custom");
+  rpSync(view.days[0], view.days[view.days.length - 1]);
   var d = view.days;
   document.getElementById("span-pill").textContent = d[0] + " → " + d[d.length - 1];
-  var runs = missingRuns(all);
-  var src = state.source === "live"
-    ? "目前顯示的是試算表的即時資料，按「重新讀取」可再抓一次。"
-    : "這個環境連不到 Google 試算表，目前顯示 " + SNAPSHOT_AT + " 擷取的快照。把這個頁面放到 GitHub Pages 等一般網頁空間，每次打開都會直接讀試算表。";
   if (hoverDay){ var hk = view.days.indexOf(hoverDay); if (hk >= 0) syncShow(hk); else syncHide(); }
-  document.getElementById("note").innerHTML =
-    "<b>資料來源</b>：Google 試算表「2026 Q2 KE7 產品數據」→ 產品總表(日)，從第 5 列開始讀，欄位 <code>B 日期 · C 日活躍數 · D 新增(註冊) · L 充值PR · Q 總充值($) · V ARPPU · Z 總投注GGR</code>。" +
-    "除了總用戶數（" + (baseInfo.d ? md(baseInfo.d) : "1/1") + " 日活 + 之後每天的新增逐日累加）之外，所有數字都直接取自試算表。" +
-    (runs.length ? "試算表目前沒有 " + runs.join("、") + " 的資料，圖上以灰底留白，這幾天的新增不會算進總用戶數，補齊後會自動變準。" : "") +
-    "<br>" + src;
+  var runs = missingRuns(view), note = document.getElementById("note");
+  note.textContent = runs.length ? "試算表沒有資料的日期：" + runs.join("、") + "（圖上灰底的部分）" : "";
+  note.hidden = !runs.length;
 }
+
+/* ---------- 同時在線熱力圖（資料：熱力圖試算表，爬蟲任務 h 每天寫 24 列，肯亞時間） ---------- */
+var HW = ["週一","週二","週三","週四","週五","週六","週日"];
+var HSER = {m:{label:"會員", color:"#3ccf9d"}, v:{label:"訪客", color:"#7aa7f7"}, t:{label:"合計", color:"#f4b740"}};
+var HMETH = {
+  p:{name:"平常人數", inner:"med", cross:"median",
+     desc:"每小時 60 筆取<b>中位數</b>，再把區間內同星期、同時段的天數取<b>中位數</b>。活動日、異常日不會把數字拉高。", use:"排活動時間看這個"},
+  a:{name:"含特殊日平均", inner:"avg", cross:"mean",
+     desc:"每小時 60 筆取<b>平均</b>，再跨天取<b>平均</b>，活動日、異常日全部算進去。跟「平常人數」差很多的格子，代表那個時段有特殊日。", use:"看活動有沒有把人拉上來"},
+  k:{name:"尖峰人數", inner:"max", cross:"median",
+     desc:"每小時<b>最擠的那一分鐘</b>，再跨天取<b>中位數</b>。", use:"看伺服器負載、客服排班看這個"}
+};
+var HEAT_SHEET_ID = "1nHi3wf5U_g6caMSF2xYbeOE6GFL5ZzAnb4snMzULJXA", HEAT_GID = "0";
+// 欄位：A 日期 · B 小時 · D–F 會員 中位/平均/最高 · G–I 訪客 · J–L 合計（M 筆數 = 0 的空小時不讀）
+var HEAT_TQ = "select A,B,D,E,F,G,H,I,J,K,L where M > 0 options no_format";
+var HEAT_OFF = {m:0, v:3, t:6}, HEAT_IN = {med:0, avg:1, max:2};
+var HEAT_SNAP = null;
+var heatS = "m", heatM = "p", heatView = null, heatUsed = 0;
+var heat = {byDay: HEAT_SNAP, source: HEAT_SNAP ? "snapshot" : "loading"};
+function heatUrl(extra){
+  return "https://docs.google.com/spreadsheets/d/" + HEAT_SHEET_ID + "/gviz/tq?gid=" + HEAT_GID +
+    "&headers=1&tqx=out:json" + (extra || "") + "&tq=" + encodeURIComponent(HEAT_TQ);
+}
+function heatParse(obj){
+  if (!obj || obj.status === "error" || !obj.table) throw new Error("gviz error");
+  var by = {}, n = 0;
+  obj.table.rows.forEach(function(r){
+    var c = r.c; if (!c || !c[0] || c[0].v == null || !c[1] || c[1].v == null) return;
+    var d = String(c[0].v), dm = d.match(/Date\((\d+),(\d+),(\d+)/);
+    if (dm) d = dm[1] + "-" + pad(+dm[2] + 1) + "-" + pad(+dm[3]);
+    else { var p = d.trim().split(/[-\/]/); if (p.length !== 3) return; d = p[0] + "-" + pad(+p[1]) + "-" + pad(+p[2]); }
+    var h = Number(c[1].v); if (!(h >= 0 && h < 24)) return;
+    var st = [];
+    for (var k = 2; k < 11; k++) st.push(c[k] && c[k].v != null && c[k].v !== "" ? Number(c[k].v) : null);
+    (by[d] = by[d] || new Array(24))[h] = st; n++;
+  });
+  if (!n) throw new Error("empty");
+  return by;
+}
+function heatFetch(){
+  return new Promise(function(resolve, reject){
+    var ctl = ("AbortController" in window) ? new AbortController() : null;
+    var t = setTimeout(function(){ if (ctl) ctl.abort(); reject(new Error("timeout")); }, 20000);
+    fetch(heatUrl(), {cache:"no-store", signal: ctl ? ctl.signal : undefined})
+      .then(function(res){ if (!res.ok) throw new Error("http " + res.status); return res.text(); })
+      .then(function(txt){
+        clearTimeout(t);
+        var m = txt.match(/setResponse\(([\s\S]*)\);?\s*$/);
+        resolve(heatParse(JSON.parse(m ? m[1] : txt)));
+      })
+      .catch(function(e){ clearTimeout(t); reject(e); });
+  });
+}
+function heatJsonp(){
+  return new Promise(function(resolve, reject){
+    var cb = "__ke7heat" + Date.now(), s = document.createElement("script"), done = false;
+    function clean(){ done = true; try { delete window[cb]; } catch(e){ window[cb] = undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
+    var t = setTimeout(function(){ if (!done){ clean(); reject(new Error("timeout")); } }, 20000);
+    window[cb] = function(obj){ clearTimeout(t); clean(); try { resolve(heatParse(obj)); } catch(e){ reject(e); } };
+    s.onerror = function(){ clearTimeout(t); clean(); reject(new Error("blocked")); };
+    s.src = heatUrl(";responseHandler:" + cb);
+    document.head.appendChild(s);
+  });
+}
+function heatLoad(){
+  if (!heat.byDay){ heat.source = "loading"; if (heatView) drawHeat(); }
+  heatFetch().catch(function(){ return heatJsonp(); }).then(function(by){
+    heat.byDay = by; heat.source = "live";
+  }).catch(function(){
+    if (heat.source !== "live") heat.source = heat.byDay ? "snapshot" : "error";
+  }).then(function(){ if (heatView) drawHeat(); });
+}
+function heatReady(){
+  var msg = null;
+  if (!heat.byDay) msg = heat.source === "error" ? "讀不到在線資料的試算表，請按右上角「重新讀取」再試一次。" : "在線資料載入中…";
+  else if (!heatView.days.some(function(d){ return heat.byDay[d]; })){
+    var ks = Object.keys(heat.byDay).sort();
+    msg = "這個區間沒有在線資料" + (ks.length ? "（在線資料從 " + md(ks[0]) + " 開始）" : "") + "。";
+  }
+  if (!msg) return true;
+  document.getElementById("hm").innerHTML = '<div class="hm-msg">' + msg + "</div>";
+  ["heat-sum", "heat-legend", "heat-sumhd", "heat-basis"].forEach(function(id){ document.getElementById(id).innerHTML = ""; });
+  document.getElementById("heat-desc").innerHTML = HMETH[heatM].desc + ' <span class="use">→ ' + HMETH[heatM].use + "</span>";
+  hideHeatTip();
+  return false;
+}
+function median(a){ var s = a.slice().sort(function(x, y){ return x - y; }), n = s.length; if (!n) return null; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; }
+function mean(a){ if (!a.length) return null; var s = 0; a.forEach(function(v){ s += v; }); return s / a.length; }
+/* 8 級單色階（深 → 亮，越亮人越多），每個系列沿用自己的色相 */
+var HRAMP = {
+  m:["#1e4c3b","#1c684e","#138562","#0ea378","#2bc090","#6ad8ad","#9ce9c8","#caf8e2"],
+  v:["#2e4265","#3b598e","#4870b8","#5888e0","#70a3fe","#9dc0fe","#c0d7ff","#e1ecff"],
+  t:["#533f19","#725317","#93690d","#b38007","#d29922","#e8b75f","#f5d091","#ffe8c2"]
+};
+function heatBin(t){ return Math.min(7, Math.max(0, Math.floor(t * 8))); }
+function heatColor(t){ return HRAMP[heatS][heatBin(t)]; }
+function fmtN(v){ return v == null ? "—" : Math.round(v).toLocaleString("en-US"); }
+function fmtP(v){ return v == null ? "—" : (Number.isInteger(v) ? v.toLocaleString("en-US") : v.toLocaleString("en-US", {minimumFractionDigits:1, maximumFractionDigits:1})); }
+function hhmm(h){ return pad(h) + ":00"; }
+function slot(h){ return hhmm(h) + "–" + (h === 23 ? "24:00" : hhmm(h + 1)); }
+function renderHeat(view){ heatView = view; drawHeat(); }
+function heatCells(){
+  var M = HMETH[heatM], cells = [], w, h;
+  for (w = 0; w < 7; w++){ cells.push([]); for (h = 0; h < 24; h++) cells[w].push({vals:[], rec:-1, recD:null}); }
+  heatUsed = 0;
+  var off = HEAT_OFF[heatS], inn = HEAT_IN[M.inner];
+  heatView.days.forEach(function(iso){
+    var d = heat.byDay[iso]; if (!d) return;
+    heatUsed++;
+    var w = (new Date(toMs(iso)).getUTCDay() + 6) % 7;
+    for (var h = 0; h < 24; h++){
+      var st = d[h]; if (!st) continue;
+      var v = st[off + inn], c = cells[w][h];
+      if (v != null) c.vals.push(v);
+      if (st[off + 2] != null && st[off + 2] > c.rec){ c.rec = st[off + 2]; c.recD = iso; }
+    }
+  });
+  for (w = 0; w < 7; w++) for (h = 0; h < 24; h++){
+    var c = cells[w][h];
+    c.v = M.cross === "median" ? median(c.vals) : mean(c.vals);
+    c.lo = c.vals.length ? Math.min.apply(0, c.vals) : null;
+    c.hi = c.vals.length ? Math.max.apply(0, c.vals) : null;
+  }
+  return cells;
+}
+function drawHeat(){
+  if (!heatReady()) return;
+  var view = heatView, cells = heatCells(), col = HSER[heatS].color, M = HMETH[heatM], w, h;
+  var mn = Infinity, mx = -Infinity, pk = null, lo = null;
+  for (w = 0; w < 7; w++) for (h = 0; h < 24; h++){
+    var v = cells[w][h].v; if (v == null) continue;
+    if (v < mn){ mn = v; lo = [w, h]; } if (v > mx){ mx = v; pk = [w, h]; }
+  }
+  var dAvg = [], hAvg = [];
+  for (w = 0; w < 7; w++) dAvg.push(mean(cells[w].map(function(c){ return c.v; }).filter(function(v){ return v != null; })));
+  for (h = 0; h < 24; h++){ var a = []; for (w = 0; w < 7; w++) if (cells[w][h].v != null) a.push(cells[w][h].v); hAvg.push(mean(a)); }
+  function arg(arr, best){ var k = -1; arr.forEach(function(v, i){ if (v != null && (k < 0 || (best ? v > arr[k] : v < arr[k]))) k = i; }); return k; }
+  var bd = arg(dAvg, true), bh = arg(hAvg, true), ch = arg(hAvg, false);
+  var dMax = Math.max.apply(0, dAvg.map(function(v){ return v || 0; })) || 1;
+
+  var html = ['<div></div>'];
+  for (h = 0; h < 24; h++) html.push('<div class="hh' + (h % 6 ? " x6" : "") + '">' + (h % 3 ? "" : pad(h)) + "</div>");
+  html.push('<div class="hh cap">日均</div>');
+  for (w = 0; w < 7; w++){
+    html.push('<div class="hl' + (w === bd ? " best" : "") + '">' + HW[w] + "</div>");
+    for (h = 0; h < 24; h++){
+      var cv = cells[w][h].v, t = cv == null ? 0 : (mx > mn ? (cv - mn) / (mx - mn) : .5);
+      var cls = "hc" + (pk && pk[0] === w && pk[1] === h ? " pk" : "") + (lo && lo[0] === w && lo[1] === h ? " lo" : "");
+      html.push('<div class="' + cls + '" data-w="' + w + '" data-h="' + h + '" style="background:' + (cv == null ? "var(--grid)" : heatColor(t)) + '"></div>');
+    }
+    html.push('<div class="sd' + (w === bd ? " best" : "") + '"><span class="bw"><i style="width:' + Math.round((dAvg[w] || 0) / dMax * 100) + "%;background:" + col + '"></i></span><span class="v">' + fmtN(dAvg[w]) + "</span></div>");
+  }
+  html.push('<div class="hl cap">時均</div><div class="hcv" id="hcv"></div><div></div>');
+  var hm = document.getElementById("hm");
+  hm.innerHTML = html.join("");
+  hm._cells = cells;
+  drawCurve(hAvg, bh, ch, col);
+
+  var d = view.days, cnt = cells.map(function(r){ return Math.max.apply(0, r.map(function(c){ return c.vals.length; })); }).filter(function(n){ return n > 0; });
+  var cmin = Math.min.apply(0, cnt), cmax = Math.max.apply(0, cnt);
+  document.getElementById("heat-desc").innerHTML = M.desc + ' <span class="use">→ ' + M.use + "</span>";
+  document.getElementById("heat-basis").textContent = md(d[0]) + " → " + md(d[d.length - 1]) + " 共 " + heatUsed + " 天有在線資料 · 每格用 " + (cmin === cmax ? cmin : cmin + "–" + cmax) + " 天" +
+    (heat.source === "snapshot" ? " · 快照資料" : "");
+  document.getElementById("heat-sumhd").textContent = "結論 · 依「" + M.name + "」· " + HSER[heatS].label;
+  document.getElementById("heat-sum").innerHTML = bd < 0 ? "" :
+    '<div class="hs"><span class="k">人最多的一天</span><span class="v">' + HW[bd] + '</span><span class="s">日均 ' + fmtN(dAvg[bd]) + " 人</span></div>" +
+    '<div class="hs"><span class="k">高峰時段</span><span class="v">' + slot(bh) + '</span><span class="s">時均 ' + fmtN(hAvg[bh]) + " 人</span></div>" +
+    '<div class="hs"><span class="k">最冷時段</span><span class="v">' + slot(ch) + '</span><span class="s">時均 ' + fmtN(hAvg[ch]) + " 人</span></div>";
+  var sws = HRAMP[heatS].map(function(c, k){
+    var a = mn + (mx - mn) * k / 8, b = mn + (mx - mn) * (k + 1) / 8;
+    return '<i style="background:' + c + '" title="' + fmtN(a) + "–" + fmtN(b) + ' 人"></i>';
+  }).join("");
+  document.getElementById("heat-legend").innerHTML = pk ?
+    "<span>少 " + fmtN(mn) + '</span><span class="sws">' + sws + "</span><span>" + fmtN(mx) + " 人 多</span>" +
+    '<span><i class="mk" style="box-shadow:inset 0 0 0 2px var(--bg);background:' + heatColor(1) + '"></i>最高格 ' + HW[pk[0]] + " " + hhmm(pk[1]) + "</span>" +
+    '<span><i class="mk" style="box-shadow:inset 0 0 0 2px var(--ink-2);background:' + heatColor(0) + '"></i>最低格 ' + HW[lo[0]] + " " + hhmm(lo[1]) + "</span>" +
+    '<span class="hint">游標移到格子上（手機點一下）看詳細</span>' : "";
+  hideHeatTip();
+}
+function drawCurve(hAvg, bh, ch, col){
+  var box = document.getElementById("hcv"); if (!box) return;
+  var W = box.clientWidth, H = box.clientHeight, gap = parseFloat(getComputedStyle(document.getElementById("hm")).columnGap) || 3;
+  var cw = (W - 23 * gap) / 24, top = 18, bot = 4;
+  var mx = Math.max.apply(0, hAvg.map(function(v){ return v || 0; })) || 1;
+  function X(i){ return i * (cw + gap) + cw / 2; }
+  function Y(v){ return H - bot - (v / mx) * (H - top - bot); }
+  var pts = [], i;
+  for (i = 0; i < 24; i++) if (hAvg[i] != null) pts.push([X(i), Y(hAvg[i])]);
+  if (!pts.length){ box.innerHTML = ""; return; }
+  var line = pts.map(function(p, k){ return (k ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1); }).join("");
+  var area = line + "L" + pts[pts.length - 1][0].toFixed(1) + "," + (H - bot) + "L" + pts[0][0].toFixed(1) + "," + (H - bot) + "Z";
+  var s = '<svg viewBox="0 0 ' + W + " " + H + '" aria-hidden="true"><defs><linearGradient id="hcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".28"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs>';
+  s += '<line class="cg" x1="0" x2="' + W + '" y1="' + (H - bot) + '" y2="' + (H - bot) + '"/>';
+  s += '<path d="' + area + '" fill="url(#hcg)"/><path class="cl" d="' + line + '" stroke="' + col + '"/>';
+  [[bh, true], [ch, false]].forEach(function(o){
+    var k = o[0]; if (k < 0) return;
+    var x = X(k), y = Y(hAvg[k]), anchor = x < 30 ? "start" : x > W - 30 ? "end" : "middle";
+    s += '<circle cx="' + x + '" cy="' + y + '" r="3.5" fill="' + (o[1] ? col : "var(--panel)") + '" stroke="' + col + '" stroke-width="1.5"/>';
+    s += '<text class="cv" x="' + x + '" y="' + (y - 7) + '" text-anchor="' + anchor + '">' + fmtN(hAvg[k]) + "</text>";
+  });
+  box.innerHTML = s + "</svg>";
+}
+function showHeatTip(cell){
+  var hm = document.getElementById("hm"), box = document.getElementById("heat-box"), tip = box.querySelector(".htip");
+  var w = +cell.getAttribute("data-w"), h = +cell.getAttribute("data-h"), c = hm._cells[w][h], M = HMETH[heatM];
+  var prev = hm.querySelector(".hc.on"); if (prev) prev.classList.remove("on");
+  cell.classList.add("on");
+  tip.innerHTML = '<div class="d">' + HW[w] + " " + slot(h) + "</div>" +
+    '<div class="row"><span class="sw" style="background:' + HSER[heatS].color + '"></span><span class="k">' + HSER[heatS].label + " · " + M.name + "</span><b>" + fmtP(c.v) + "</b></div>" +
+    (c.vals.length ? '<div class="muted">各天 ' + fmtP(c.lo) + "–" + fmtP(c.hi) + " · " + c.vals.length + " 天樣本</div>" +
+      '<div class="muted">區間最高一分鐘 ' + fmtN(c.rec) + "（" + md(c.recD) + "）</div>" : '<div class="muted">這個區間沒有資料</div>');
+  tip.hidden = false;
+  var br = box.getBoundingClientRect(), cr = cell.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  var left = Math.max(0, Math.min(br.width - tw, cr.left - br.left + cr.width / 2 - tw / 2));
+  var top = cr.top - br.top - th - 8; if (top < 0) top = cr.bottom - br.top + 8;
+  tip.style.left = left + "px"; tip.style.top = top + "px";
+}
+function hideHeatTip(){
+  var prev = document.querySelector("#hm .hc.on"); if (prev) prev.classList.remove("on");
+  document.querySelector("#heat-box .htip").hidden = true;
+}
+(function(){
+  var hm = document.getElementById("hm");
+  function pick(e){ var c = e.target.closest && e.target.closest(".hc"); if (c) showHeatTip(c); }
+  hm.addEventListener("pointermove", pick);
+  hm.addEventListener("pointerdown", pick);
+  hm.addEventListener("pointerleave", function(e){ if (e.pointerType !== "touch") hideHeatTip(); });
+  document.addEventListener("pointerdown", function(e){ if (!(e.target.closest && e.target.closest("#hm"))) hideHeatTip(); });
+  function bindSeg(id, attr, set){
+    document.querySelectorAll("#" + id + " button").forEach(function(b){
+      b.addEventListener("click", function(){
+        set(b.getAttribute(attr));
+        document.querySelectorAll("#" + id + " button").forEach(function(o){ o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+        if (heatView) drawHeat();
+      });
+    });
+  }
+  bindSeg("heat-seg", "data-s", function(v){ heatS = v; });
+  bindSeg("heat-meth", "data-m", function(v){ heatM = v; });
+})();
 
 /* ---------- wiring ---------- */
 buildCards();
@@ -746,22 +1136,126 @@ document.querySelectorAll(".seg button").forEach(function(b){
     renderAll();
   });
 });
-document.getElementById("reload").addEventListener("click", load);
+document.getElementById("reload").addEventListener("click", function(){ load(); heatLoad(); });
 document.addEventListener("pointerdown", function(e){
   if (hoverDay && !(e.target.closest && e.target.closest(".chart"))) syncHide();
 });
-function onPick(id){
-  if (!dateMin) return;
-  fillPicker(id, readPicker(id));
-  var f = readPicker("dp-from"), t = readPicker("dp-to");
-  if (f > t){ var x = f; f = t; t = x; }
-  fillPicker("dp-from", f); fillPicker("dp-to", t);
-  state.range = "custom"; state.from = f; state.to = t;
+/* ---------- 日期區間：一個日曆，先點開始、再點結束 ---------- */
+var rp = {s:null, e:null, y:0, m:0, mode:"d", phase:"show", hov:null, curFrom:null, curTo:null};
+function isoOf(y, m, d){ return y + "-" + pad2(m) + "-" + pad2(d); }
+function slash(iso){ return iso.replace(/-/g, "/"); }
+function spanDays(a, b){ return Math.round((toMs(b) - toMs(a)) / DAY) + 1; }
+function rpSync(from, to){
+  rp.curFrom = from; rp.curTo = to;
+  document.getElementById("rp-label").textContent = slash(from) + " – " + slash(to);
+  document.getElementById("rp-btn").classList.toggle("on", state.range === "custom");
+}
+function rpOpen(){
+  if (!dateMin || !rp.curTo) return;
+  rp.s = rp.curFrom; rp.e = rp.curTo; rp.phase = "show"; rp.hov = null; rp.mode = "d";
+  rp.y = +rp.e.slice(0, 4); rp.m = +rp.e.slice(5, 7);
+  var pop = document.getElementById("rp-pop");
+  pop.style.left = "";
+  pop.hidden = false; document.getElementById("rp-scrim").hidden = false;
+  document.getElementById("rp-btn").setAttribute("aria-expanded", "true");
+  rpDraw();
+  if (window.innerWidth > 640){
+    var r = pop.getBoundingClientRect();
+    if (r.right > window.innerWidth - 8) pop.style.left = (pop.offsetLeft - (r.right - window.innerWidth + 8)) + "px";
+  }
+  var focus = pop.querySelector(".rp-days button.e") || pop.querySelector(".rp-days button:not(:disabled)");
+  if (focus) focus.focus({preventScroll:true});
+}
+function rpClose(){
+  document.getElementById("rp-pop").hidden = true; document.getElementById("rp-scrim").hidden = true;
+  var b = document.getElementById("rp-btn"); b.setAttribute("aria-expanded", "false");
+}
+function rpDraw(){
+  var body = document.getElementById("rp-body"), title = document.getElementById("rp-title");
+  var prev = document.querySelector('#rp-pop [data-nav="-1"]'), next = document.querySelector('#rp-pop [data-nav="1"]');
+  var y0 = +dateMin.slice(0, 4), m0 = +dateMin.slice(5, 7), y1 = +dateMax.slice(0, 4), m1 = +dateMax.slice(5, 7), h = "", i, m, d;
+  if (rp.mode === "m"){
+    title.textContent = rp.y + " 年";
+    title.setAttribute("aria-label", "回到日期");
+    prev.disabled = rp.y <= y0; next.disabled = rp.y >= y1;
+    h = '<div class="rp-months">';
+    for (m = 1; m <= 12; m++){
+      var off = rp.y < y0 || (rp.y === y0 && m < m0) || rp.y > y1 || (rp.y === y1 && m > m1);
+      h += '<button type="button" data-m="' + m + '"' + (m === rp.m ? ' class="cur"' : "") + (off ? " disabled" : "") + ">" + m + " 月</button>";
+    }
+    body.innerHTML = h + "</div>";
+  } else {
+    title.textContent = rp.y + " 年 " + rp.m + " 月";
+    title.setAttribute("aria-label", rp.y + " 年 " + rp.m + " 月，點一下改選年份與月份");
+    prev.disabled = rp.y < y0 || (rp.y === y0 && rp.m <= m0);
+    next.disabled = rp.y > y1 || (rp.y === y1 && rp.m >= m1);
+    var lo = rp.s, hi = rp.phase === "end" ? (rp.hov || rp.s) : rp.e;
+    if (lo && hi && hi < lo){ var t = lo; lo = hi; hi = t; }
+    var first = new Date(Date.UTC(rp.y, rp.m - 1, 1)).getUTCDay(), nd = new Date(Date.UTC(rp.y, rp.m, 0)).getUTCDate();
+    h = '<div class="rp-wk" aria-hidden="true"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="rp-days">';
+    for (i = 0; i < first; i++) h += "<span></span>";
+    for (d = 1; d <= nd; d++){
+      var iso = isoOf(rp.y, rp.m, d), cls = [];
+      if (lo && hi && iso >= lo && iso <= hi) cls.push("in");
+      if (iso === lo) cls.push("s");
+      if (iso === hi) cls.push("e");
+      h += '<button type="button" data-d="' + iso + '"' + (cls.length ? ' class="' + cls.join(" ") + '"' : "") +
+        ' aria-label="' + rp.m + " 月 " + d + " 日 " + WD[new Date(toMs(iso)).getUTCDay()] + '"' +
+        (iso < dateMin || iso > dateMax ? " disabled" : "") + ">" + d + "</button>";
+    }
+    body.innerHTML = h + "</div>";
+  }
+  document.getElementById("rp-hint").textContent =
+    rp.phase === "end" ? "② 再點結束日期" : rp.phase === "done" ? "✓ 選好了，按「套用」更新圖表" : "① 點開始日期";
+  document.getElementById("rp-sel").textContent = rp.phase === "end"
+    ? slash(rp.s) + " → ？"
+    : slash(rp.s) + " → " + slash(rp.e) + " · " + spanDays(rp.s, rp.e) + " 天";
+  document.getElementById("rp-ok").disabled = rp.phase !== "done";
+}
+function rpPick(iso){
+  if (rp.phase !== "end"){ rp.s = iso; rp.e = null; rp.phase = "end"; }
+  else { if (iso < rp.s){ rp.e = rp.s; rp.s = iso; } else rp.e = iso; rp.phase = "done"; }
+  rp.hov = null;
+  rpDraw();
+  var f = document.querySelector('#rp-body [data-d="' + iso + '"]'); if (f) f.focus({preventScroll:true});
+}
+function rpApply(){
+  if (rp.phase !== "done") return;
+  state.range = "custom"; state.from = rp.s; state.to = rp.e;
   document.querySelectorAll(".seg button").forEach(function(o){ o.setAttribute("aria-pressed", "false"); });
+  rpClose();
+  document.getElementById("rp-btn").focus({preventScroll:true});
   renderAll();
 }
-["dp-from", "dp-to"].forEach(function(id){
-  document.getElementById(id).addEventListener("change", function(){ onPick(id); });
+document.getElementById("rp-btn").addEventListener("click", function(){
+  if (document.getElementById("rp-pop").hidden) rpOpen(); else rpClose();
+});
+document.getElementById("rp-scrim").addEventListener("click", rpClose);
+document.getElementById("rp-cancel").addEventListener("click", function(){ rpClose(); document.getElementById("rp-btn").focus({preventScroll:true}); });
+document.getElementById("rp-ok").addEventListener("click", rpApply);
+document.getElementById("rp-title").addEventListener("click", function(){ rp.mode = rp.mode === "d" ? "m" : "d"; rpDraw(); });
+document.querySelectorAll("#rp-pop [data-nav]").forEach(function(b){
+  b.addEventListener("click", function(){
+    var k = +b.getAttribute("data-nav");
+    if (rp.mode === "m") rp.y += k;
+    else { rp.m += k; if (rp.m < 1){ rp.m = 12; rp.y--; } if (rp.m > 12){ rp.m = 1; rp.y++; } }
+    rpDraw();
+  });
+});
+var rpBody = document.getElementById("rp-body");
+rpBody.addEventListener("click", function(e){
+  var b = e.target.closest && e.target.closest("button"); if (!b || b.disabled) return;
+  if (b.hasAttribute("data-m")){ rp.m = +b.getAttribute("data-m"); rp.mode = "d"; rpDraw(); return; }
+  rpPick(b.getAttribute("data-d"));
+});
+rpBody.addEventListener("mouseover", function(e){
+  if (rp.phase !== "end") return;
+  var b = e.target.closest && e.target.closest("button[data-d]"); if (!b || b.disabled) return;
+  var iso = b.getAttribute("data-d"); if (iso === rp.hov) return;
+  rp.hov = iso; rpDraw();
+});
+document.getElementById("rp-pop").addEventListener("keydown", function(e){
+  if (e.key === "Escape"){ rpClose(); document.getElementById("rp-btn").focus({preventScroll:true}); }
 });
 try {
   var saved = localStorage.getItem("ke7-range");
@@ -778,6 +1272,7 @@ if ("ResizeObserver" in window){
 state.rows = readSnapshot(); state.source = "snapshot";
 renderAll();
 load();
+heatLoad();
 })();
 </script>
 
